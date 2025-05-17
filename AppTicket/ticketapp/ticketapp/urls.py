@@ -15,12 +15,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path,include
 from tickets.admin import admin_site
 from django.views.i18n import set_language
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
+import debug_toolbar
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -43,4 +44,5 @@ urlpatterns = [
             name='schema-swagger-ui'),
     re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0),
             name='schema-redoc'),
+    path('__debug__/', include(debug_toolbar.urls)),
 ]

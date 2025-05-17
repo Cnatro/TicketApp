@@ -1,0 +1,10 @@
+/* Ẩn sidebar hoàn toàn và cho phần nội dung chiếm full chiều ngang */
+body.sidebar-mini .main-sidebar {
+    display: none !important;
+}
+
+body.sidebar-mini .main-header,
+body.sidebar-mini .content-wrapper,
+body.sidebar-mini .main-footer {
+    margin-left: 0 !important;
+}
