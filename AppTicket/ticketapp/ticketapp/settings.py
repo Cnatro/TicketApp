@@ -30,6 +30,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# # them
+# MEDIA_ROOT = '%s/tickets/static/' % BASE_DIR
+# CKEDITOR_UPLOAD_PATH = "ckeditors/tickets/"
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -43,8 +47,8 @@ INSTALLED_APPS = [
     'tickets.apps.TicketsConfig',
     'rest_framework',
     'drf_yasg',
-    'ckeditor',
-    'ckeditor_uploader',
+    # 'ckeditor',
+    # 'ckeditor_uploader',
     'debug_toolbar',
 ]
 
