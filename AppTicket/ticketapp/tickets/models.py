@@ -3,9 +3,12 @@ from django.db import models
 from cloudinary.models import CloudinaryField
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
+from datetime import timedelta
+
 
 class User(AbstractUser):
-    gender = models.BooleanField(null=True,default=True)
+    gender = models.BooleanField(null=True, default=True)
     birthday = models.DateField(null=True)
     avatar = CloudinaryField("avatar", null=True)
     phone = models.CharField(max_length=15, null=True)
@@ -35,6 +38,9 @@ class Venue(BasicModel):
     img_seat = CloudinaryField("img_seat")
     address = models.CharField(max_length=255)
 
+    def __str__(self):
+        return f"{self.name} - {self.capacity}"
+
 
 class Event(BasicModel):
     class Status(models.TextChoices):
@@ -43,18 +49,44 @@ class Event(BasicModel):
         ENDED = 'ended', 'Ended'
         CANCELLED = 'cancelled', 'Cancelled'
 
-
     name = models.CharField(max_length=100)
     image = CloudinaryField("img_event")
     attendee_count = models.IntegerField(default=0)
     started_date = models.DateTimeField()
     ended_date = models.DateTimeField()
-    description = models.CharField(max_length=255,null=True)
+    description = models.CharField(max_length=255, null=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PUBLISHED)
 
-    category = models.ForeignKey(Category,on_delete=models.RESTRICT,related_name="events")
-    user = models.ForeignKey(User,on_delete=models.RESTRICT,related_name="events")
-    venue = models.ForeignKey(Venue,on_delete=models.RESTRICT,related_name="events")
+    category = models.ForeignKey(Category, on_delete=models.RESTRICT, related_name="events")
+    user = models.ForeignKey(User, on_delete=models.RESTRICT, related_name="events")
+    venue = models.ForeignKey(Venue, on_delete=models.RESTRICT, related_name="events")
+
+
+    def validate_event(self):
+        if self.started_date < (timezone.now() + timedelta(days=2)):
+            raise ValidationError("Thời gian bắt đầu phải lớn hơn hiện tại 2 ngày")
+        if self.ended_date <= self.started_date:
+            raise ValidationError("Thời gian kết thúc phải lớn hơn thời gian hiện tại")
+
+        event_exist = Event.objects.filter(started_date__lt=self.ended_date,
+                                           ended_date__gt=self.started_date,
+                                           venue=self.venue)
+        # bỏ qua chính nó khi update
+        if self.pk:
+            event_exist = event_exist.exclude(pk=self.pk)
+
+        if event_exist.exists():
+            event = event_exist.first()
+            raise ValidationError(
+                f"Đã có sự kiện '{event.name}' diễn ra tại '{event.venue.name}' "
+                f"từ {event.started_date.strftime('%d/%m/%Y %H:%M')} đến {event.ended_date.strftime('%d/%m/%Y %H:%M')}"
+            )
+        if self.attendee_count > self.venue.capacity:
+            raise ValidationError("Số người tham gia phải nhỏ hơn sức chứa của địa điểm")
+
+    def clean(self):
+        super().clean()
+        self.validate_event()
 
     def __str__(self):
         return self.name
@@ -65,7 +97,7 @@ class Performance(BasicModel):
     started_date = models.DateTimeField()
     ended_date = models.DateTimeField()
 
-    event = models.ForeignKey(Event,on_delete=models.CASCADE,related_name="performances")
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="performances")
 
     def validation_time(self):
         if (self.started_date < self.event.started_date or
@@ -76,6 +108,10 @@ class Performance(BasicModel):
                 self.ended_date > self.event.ended_date):
             raise ValidationError("Thời gian kết thúc phải trong khoảng thời bắt đầu và kết thúc sự kiện")
 
+    def clean(self):
+        super().clean()
+        self.validation_time()
+
     def __str__(self):
         return self.name
 
@@ -83,32 +119,24 @@ class Performance(BasicModel):
 class Ticket_Type(BasicModel):
     name = models.CharField(max_length=50)
 
-    event = models.ForeignKey(Event, on_delete=models.CASCADE,related_name="ticket_types")
+    quantity = models.IntegerField(default=0)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="ticket_types")
 
     def __str__(self):
-        return self.name
+        return f"{self.name} thuộc sự kiện {self.event.name}"
 
 
 class Ticket(BasicModel):
-    quantity = models.IntegerField(default=0)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-
-    event = models.ForeignKey(Event,on_delete=models.CASCADE,related_name="tickets")
-    ticket_type = models.ForeignKey(Ticket_Type,on_delete=models.RESTRICT,related_name="tickets")
-
-    def __str__(self):
-        return f"{self.ticket_type.name} - {self.event.name} - {self.price}"
-
-
-class Registration(BasicModel):
-    code_qr = models.CharField(max_length=255)
+    code_qr = models.CharField(max_length=255,unique=True)
     is_checked_in = models.BooleanField(default=False)
+    quantity = models.IntegerField(default=0)
 
-    user = models.ForeignKey(User,on_delete=models.PROTECT,related_name="registrations")
-    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE,related_name="registrations")
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="tickets")
+    ticket_type = models.ForeignKey(Ticket_Type, on_delete=models.RESTRICT, related_name="tickets")
 
     def __str__(self):
-        pass
+        return self.ticket_type.name
 
 
 class Receipt(BasicModel):
@@ -119,10 +147,10 @@ class Receipt(BasicModel):
     payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices)
     is_paid = models.BooleanField(default=False)
 
-    registration = models.OneToOneField(Registration,on_delete=models.CASCADE,related_name="receipt")
+    ticket = models.OneToOneField(Ticket, on_delete=models.CASCADE, related_name="receipt")
 
     def __str__(self):
-        return f"Reg #{self.id} - {self.user.username} - {self.ticket.event.name}"
+        return self.ticket.ticket_type.name
 
 
 class Interaction(BasicModel):
@@ -142,10 +170,11 @@ class Comment(Interaction):
 
 
 class Review(Interaction):
-    count = models.IntegerField( validators=[
-            MinValueValidator(1),
-            MaxValueValidator(5)
-        ])
+    count = models.IntegerField(validators=[
+        MinValueValidator(1),
+        MaxValueValidator(5)
+    ])
+
     class Meta:
         unique_together = ('event', 'user')
 
@@ -161,6 +190,13 @@ class Messages(BasicModel):
         return f"Message from {self.user.username} at {self.sent_at}"
 
 
-
 class Notification(BasicModel):
-    pass
+    title = models.CharField(max_length=100)
+    content = models.CharField(max_length=255, default="Thông báo")
+    is_read = models.BooleanField(default=False)
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
+    event = models.ForeignKey(Event, null=True, blank=True, on_delete=models.SET_NULL, related_name="notifications")
+
+    def __str__(self):
+        return f"Notify: {self.title} -> {self.user.username}"
