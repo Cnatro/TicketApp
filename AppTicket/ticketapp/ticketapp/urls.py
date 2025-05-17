@@ -18,8 +18,29 @@ from django.contrib import admin
 from django.urls import path
 from tickets.admin import admin_site
 from django.views.i18n import set_language
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from rest_framework import permissions
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Ticket API",
+        default_version='v1',
+        description="APIs for Ticket",
+        contact=openapi.Contact(email="2251052078nhan@ou.edu.vn"),
+        license=openapi.License(name="Nhân Nhật@2025"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
 
 urlpatterns = [
     # path('set_language/', set_language, name='set_language'),
     path('admin/', admin_site.urls),
+    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0),
+            name='schema-json'),
+    re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0),
+            name='schema-swagger-ui'),
+    re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0),
+            name='schema-redoc'),
 ]
