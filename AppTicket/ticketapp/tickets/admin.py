@@ -1,4 +1,7 @@
+from idlelib.rpc import request_queue
+
 from django.contrib import admin
+from django.contrib.auth.models import Group, Permission
 from django.utils.html import format_html
 from django.urls import reverse
 from .models import *
@@ -6,9 +9,45 @@ import qrcode
 import base64
 from io import BytesIO
 from django.db.models import Avg
+from ticketapp.settings import ALLOWED_GROUPS
+from django.contrib.auth.hashers import make_password
 
 
-class BaseAdminSite(admin.ModelAdmin):
+class TicketAppAdminSite(admin.AdminSite):
+    site_header = "TICKETMALL - NN"
+
+    def has_permission(self, request):
+        if not request.user.is_active or not request.user.is_authenticated:
+            return False
+
+        return request.user.groups.filter(name__in=ALLOWED_GROUPS).exists()
+
+
+class BaseModelAdmin(admin.ModelAdmin):
+
+    def __init__(self, model, admin_site):
+        self.app_label = model._meta.app_label
+        self.model_name = model._meta.model_name
+        super().__init__(model, admin_site)
+
+    def has_permission(self, request, action,obj = None):
+        if not request.user.is_superuser and isinstance(obj, User):
+            return obj is not None and obj == request.user
+
+        perm = f"{self.app_label}.{action}_{self.model_name}"
+        return request.user.has_perm(perm)
+
+    def has_view_permission(self, request, obj=None):
+        return self.has_permission(request, "view",obj)
+
+    def has_add_permission(self, request):
+        return self.has_permission(request, "add")
+
+    def has_delete_permission(self, request, obj=None):
+        return self.has_permission(request, "delete",obj)
+
+    def has_change_permission(self, request, obj=None):
+        return self.has_permission(request, "change",obj)
 
     def actions_link(self, obj):
         edit_url = reverse(f'admin:{obj._meta.app_label}_{obj._meta.model_name}_change', args=[obj.pk])
@@ -24,11 +63,7 @@ class BaseAdminSite(admin.ModelAdmin):
     actions_link.allow_tags = True
 
 
-class TicketAppAdminSite(admin.AdminSite):
-    site_header = "TICKETMALL - NN"
-
-
-class CategoryAdminSite(BaseAdminSite):
+class CategoryModelAdmin(BaseModelAdmin):
     list_display = ['id', 'name', 'active', 'created_date', 'actions_link']
     search_fields = ['name']
     list_display_links = ['name']
@@ -36,16 +71,47 @@ class CategoryAdminSite(BaseAdminSite):
     list_filter = ['created_date', 'active']
 
 
-class UserAdminSite(BaseAdminSite):
-    list_display = ['id', 'username', 'email', 'is_active', 'actions_link']
+class UserModelAdmin(BaseModelAdmin):
+    list_display = ['id', 'username', 'email', 'is_active', 'get_groups', 'actions_link']
     search_fields = ['username', 'email']
     list_display_links = ['username']
     list_per_page = 5
     list_filter = ['is_active']
-    # làm phân quyền r hiện thị thêm role
+
+    def get_groups(self, obj):
+        return ", ".join([g.name for g in obj.groups.all()])
+
+    get_groups.short_description = 'Groups'
 
 
-class VenueAdminSite(BaseAdminSite):
+    def has_module_permission(self, request):
+        return request.user.is_superuser
+
+    def changelist_view(self, request, extra_context=None):
+        request._exclude_self = True
+        return super().changelist_view(request, extra_context=extra_context)
+
+    # lấy ds user
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if getattr(request, "_exclude_self", False):
+            qs = qs.exclude(pk=request.user.pk)
+
+        if not request.user.is_superuser :
+            qs = qs.filter(pk=request.user.pk)
+        return qs
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.password = make_password(obj.password)
+        else:
+            db_user = User.objects.get(pk=obj.pk)
+            if db_user.password != obj.password:
+                obj.password = make_password(obj.password)
+        super().save_model(request, obj, form, change)
+
+
+class VenueModelAdmin(BaseModelAdmin):
     list_display = ['id', 'name', 'capacity', 'active', 'actions_link']
     list_display_links = ['name']
     search_fields = ['name']
@@ -53,8 +119,9 @@ class VenueAdminSite(BaseAdminSite):
     list_per_page = 5
 
 
-class EventAdminSite(BaseAdminSite):
-    list_display = ['id', 'name', 'time_event', 'status', 'category', 'user', 'venue', 'attendee_count', 'active','avg_reviews',
+class EventModelAdmin(BaseModelAdmin):
+    list_display = ['id', 'name', 'time_event', 'status', 'category', 'user', 'venue', 'attendee_count', 'active',
+                    'avg_reviews',
                     'actions_link']
     search_fields = ['name']
     list_display_links = ['name']
@@ -79,7 +146,8 @@ class EventAdminSite(BaseAdminSite):
 
     avg_reviews.short_description = "reviews"
 
-class TicketTypeAdminSite(BaseAdminSite):
+
+class TicketTypeModelAdmin(BaseModelAdmin):
     list_display = ['id', 'event', 'name', 'quantity', 'format_price', 'active', 'actions_link']
     list_filter = ['event']
     search_fields = ['name']
@@ -92,16 +160,15 @@ class TicketTypeAdminSite(BaseAdminSite):
     format_price.short_description = "price"
 
 
-class TicketAdminSite(BaseAdminSite):
-    list_display = ['id', 'event_name', 'ticket_type', 'qr_code','receipt', 'actions_link']
-    list_filter = ['ticket_type','receipt__id']
+class TicketModelAdmin(BaseModelAdmin):
+    list_display = ['id', 'event_name', 'ticket_type', 'qr_code', 'receipt', 'actions_link']
+    list_filter = ['ticket_type', 'receipt__id']
     list_select_related = ['receipt']
     list_per_page = 5
     exclude = ['is_check_in', 'code_qr']
 
     def event_name(self, obj):
         return obj.ticket_type.event.name
-
 
     def qr_code(self, obj):
         qr_data = obj.code_qr
@@ -135,8 +202,8 @@ class TicketAdminSite(BaseAdminSite):
     qr_code.short_description = "QR"
 
 
-class PerformanceAdminSite(BaseAdminSite):
-    list_display = ['id','name','time_performance','event','actions_link']
+class PerformanceModelAdmin(BaseModelAdmin):
+    list_display = ['id', 'name', 'time_performance', 'event', 'actions_link']
     list_filter = ['event']
     search_fields = ['name']
     list_per_page = 5
@@ -144,12 +211,11 @@ class PerformanceAdminSite(BaseAdminSite):
     def time_performance(self, obj):
         return f"{obj.started_date.strftime('%d/%m/%Y %H:%M')} -- {obj.ended_date.strftime('%d/%m/%Y %H:%M')}"
 
-
     time_performance.short_description = "performance time"
 
 
-class ReceiptAdminSite(BaseAdminSite):
-    list_display = ['id','user','payment_method','is_paid','total_quantity','format_total_price','actions_link']
+class ReceiptModelAdmin(BaseModelAdmin):
+    list_display = ['id', 'user', 'payment_method', 'is_paid', 'total_quantity', 'format_total_price', 'actions_link']
     list_per_page = 5
     search_fields = ['user']
     list_filter = ['is_paid']
@@ -160,17 +226,32 @@ class ReceiptAdminSite(BaseAdminSite):
     format_total_price.short_description = "total price"
 
 
+class PermissionModelAdmin(BaseModelAdmin):
+    list_display = ['id', 'codename', 'name', 'actions_link']
+    list_filter = ['content_type__model']
+    list_per_page = 10
+    ordering = ['-id']
+    list_display_links = ['codename']
+
+
+class GroupModelAdmin(BaseModelAdmin):
+    list_display = ['id', 'name', 'actions_link']
+    search_fields = ['name']
+    list_per_page = 5
+    list_display_links = ['name']
 
 
 admin_site = TicketAppAdminSite(name="myAdminSite")
-admin_site.register(User, UserAdminSite)
-admin_site.register(Category, CategoryAdminSite)
-admin_site.register(Venue, VenueAdminSite)
-admin_site.register(Event, EventAdminSite)
-admin_site.register(Ticket_Type, TicketTypeAdminSite)
-admin_site.register(Ticket, TicketAdminSite)
-admin_site.register(Performance,PerformanceAdminSite)
-admin_site.register(Receipt,ReceiptAdminSite)
+admin_site.register(User, UserModelAdmin)
+admin_site.register(Category, CategoryModelAdmin)
+admin_site.register(Venue, VenueModelAdmin)
+admin_site.register(Event, EventModelAdmin)
+admin_site.register(Ticket_Type, TicketTypeModelAdmin)
+admin_site.register(Ticket, TicketModelAdmin)
+admin_site.register(Performance, PerformanceModelAdmin)
+admin_site.register(Receipt, ReceiptModelAdmin)
+admin_site.register(Group, GroupModelAdmin)
+admin_site.register(Permission, PermissionModelAdmin)
 # admin_site.register(Comment)
 admin_site.register(Review)
 # admin_site.register(Messages)
