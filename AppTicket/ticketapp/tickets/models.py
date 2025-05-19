@@ -61,7 +61,6 @@ class Event(BasicModel):
     user = models.ForeignKey(User, on_delete=models.RESTRICT, related_name="events")
     venue = models.ForeignKey(Venue, on_delete=models.RESTRICT, related_name="events")
 
-
     def validate_event(self):
         if self.started_date < (timezone.now() + timedelta(days=2)):
             raise ValidationError("Thời gian bắt đầu phải lớn hơn hiện tại 2 ngày")
@@ -89,7 +88,7 @@ class Event(BasicModel):
         self.validate_event()
 
     def __str__(self):
-        return self.name
+        return f"Su kien : {self.name} - Thoi gian : {self.started_date} -- {self.ended_date}"
 
 
 class Performance(BasicModel):
@@ -108,6 +107,20 @@ class Performance(BasicModel):
                 self.ended_date > self.event.ended_date):
             raise ValidationError("Thời gian kết thúc phải trong khoảng thời bắt đầu và kết thúc sự kiện")
 
+        performance_exists = Performance.objects.filter(started_date__lt=self.ended_date,
+                                           ended_date__gt=self.started_date,
+                                           event=self.event)
+        # bỏ qua chính nó khi update
+        if self.pk:
+            performance_exists = performance_exists.exclude(pk=self.pk)
+
+        if performance_exists.exists():
+            performance = performance_exists.first()
+            raise ValidationError(
+                f"Đã có chương trình '{performance.name}' diễn ra tại '{performance.event.name}' "
+                f"từ {performance.started_date.strftime('%d/%m/%Y %H:%M')} đến {performance.ended_date.strftime('%d/%m/%Y %H:%M')}"
+            )
+
     def clean(self):
         super().clean()
         self.validation_time()
@@ -123,20 +136,22 @@ class Ticket_Type(BasicModel):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="ticket_types")
 
+    def validate_ticket_type(self):
+        existing_quantity_event = Ticket_Type.objects.filter(event=self.event).exclude(pk=self.pk).aggregate(
+            total=models.Sum('quantity')
+        )['total'] or 0
+        total_quantity = existing_quantity_event + self.quantity
+        if total_quantity > self.event.attendee_count:
+            raise ValidationError(
+                f"Tổng số lượng vé ({total_quantity}) vượt quá số người tham gia cho phép ({self.event.attendee_count})"
+            )
+
+    def clean(self):
+        super().clean()
+        self.validate_ticket_type()
+
     def __str__(self):
-        return f"{self.name} thuộc sự kiện {self.event.name}"
-
-
-class Ticket(BasicModel):
-    code_qr = models.CharField(max_length=255,unique=True)
-    is_checked_in = models.BooleanField(default=False)
-    quantity = models.IntegerField(default=0)
-
-    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="tickets")
-    ticket_type = models.ForeignKey(Ticket_Type, on_delete=models.RESTRICT, related_name="tickets")
-
-    def __str__(self):
-        return self.ticket_type.name
+        return f"{self.name} - {format(self.price, ',.0f').replace(',', '.')} VNĐ"
 
 
 class Receipt(BasicModel):
@@ -146,11 +161,43 @@ class Receipt(BasicModel):
 
     payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices)
     is_paid = models.BooleanField(default=False)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    total_quantity = models.IntegerField(default=0)
 
-    ticket = models.OneToOneField(Ticket, on_delete=models.CASCADE, related_name="receipt")
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="receipts")
 
     def __str__(self):
-        return self.ticket.ticket_type.name
+        return f"Receipt #{self.pk} - {self.user.username}"
+
+    # def save(self, *args, **kwargs):
+    #     if not self.total_price:
+    #         self.total_price = self.ticket.quantity * self.ticket.ticket_type.price
+    #     super().save(*args, **kwargs)
+
+class Ticket(BasicModel):
+    code_qr = models.CharField(max_length=255, unique=True)
+    is_checked_in = models.BooleanField(default=False)
+    quantity = models.IntegerField(default=0)
+
+    ticket_type = models.ForeignKey(Ticket_Type, on_delete=models.RESTRICT, related_name="tickets")
+    receipt = models.ForeignKey(Receipt, on_delete=models.RESTRICT, related_name="tickets")
+
+    def generate_qr_code(self):
+        return (
+            f"USER: {self.receipt.user.username}\n"
+            f"EVENT: {self.ticket_type.event.name}\n"
+            f"TIME: {self.ticket_type.event.started_date} - {self.ticket_type.event.ended_date}\n"
+            f"ADDRESS: {self.ticket_type.event.venue.name} - {self.ticket_type.event.venue.address}\n"
+            f"EVENT TYPE - PRICE: {self.ticket_type.name} - {format(self.quantity * self.ticket_type.price, ',.0f').replace(',', '.')} VNĐ"
+        )
+
+    def save(self, *args, **kwargs):
+        if not self.code_qr:
+            self.code_qr = self.generate_qr_code()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.ticket_type.name
 
 
 class Interaction(BasicModel):

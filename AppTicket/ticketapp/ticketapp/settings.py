@@ -171,7 +171,7 @@ JAZZMIN_SETTINGS = {
         {"model": "auth.User"},
 
         # App with dropdown menu to all its models pages (Permissions checked against models)
-        {"app": "tickets"},
+        # {"app": "tickets"},
     ],
 
     #############
@@ -234,7 +234,7 @@ JAZZMIN_SETTINGS = {
     # UI Tweaks #
     #############
     # Relative paths to custom CSS/JS scripts (must be present in static files)
-    "custom_css": "css/no_sidebar_fix.css",
+    # "custom_css": "css/no_sidebar_fix.css",
     "custom_js": None,
     # Whether to link font from fonts.googleapis.com (use custom_css to supply font otherwise)
     "use_google_fonts_cdn": True,
@@ -280,3 +280,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = "tickets.User"
 LOGIN_REDIRECT_URL = '/admin/'
 INTERNAL_IPS = ['127.0.0.1']
+ALLOWED_GROUPS = ["ROLE_ADMIN", "ROLE_STAFF", "ROLE_EVENT_ORIGANEZE"]
