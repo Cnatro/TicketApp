@@ -37,6 +37,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     # path('set_language/', set_language, name='set_language'),
+    path('', include('tickets.urls')),
     path('admin/', admin_site.urls),
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0),
             name='schema-json'),
