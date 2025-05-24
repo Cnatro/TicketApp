@@ -30,6 +30,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# # them
+# MEDIA_ROOT = '%s/tickets/static/' % BASE_DIR
+# CKEDITOR_UPLOAD_PATH = "ckeditors/tickets/"
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -41,6 +45,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'tickets.apps.TicketsConfig',
+    'rest_framework',
+    'drf_yasg',
+    # 'ckeditor',
+    # 'ckeditor_uploader',
     'debug_toolbar',
 ]
 
@@ -82,7 +90,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "ticketdb",
         "USER": "root",
-        "PASSWORD": "Admin123@",
+        "PASSWORD": "root",
         "HOST": "",
         "PORT": "3306",
     }
