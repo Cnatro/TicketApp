@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-^z#!q28did1u0w#vsn!cn$h-v2fbhy%6xo3du!u2l#ljfqn=*q
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # # them
 # MEDIA_ROOT = '%s/tickets/static/' % BASE_DIR
@@ -90,7 +90,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "ticketdb",
         "USER": "root",
-        "PASSWORD": "root",
+        "PASSWORD": "Admin123@",
         "HOST": "",
         "PORT": "3306",
     }

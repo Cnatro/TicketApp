@@ -62,7 +62,7 @@ class TicketSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ticket
-        fields = ['id', 'code_qr', 'is_checked_in', 'quantity', 'user','ticket_types','event_name']
+        fields = ['id', 'code_qr', 'is_checked_in', 'quantity','ticket_types','event_name']
 
 
 
