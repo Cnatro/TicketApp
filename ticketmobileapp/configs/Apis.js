@@ -1,12 +1,14 @@
 // import { BASE_URL } from '@env';
 import axios from "axios";
 
-export const endpoints = {
-    "events" : "/events/"
-};
 
-const BASE_URL = "http://192.168.1.106:8000";
-console.log("BASE_URL:", BASE_URL);
+const BASE_URL = "http://192.168.1.109:8000";
+
+
+export const endpoints = {
+    "events" : "/events/",
+    "categories" : "/categories/"
+};
 
 export const authApis = (token) => {
     return axios.create({

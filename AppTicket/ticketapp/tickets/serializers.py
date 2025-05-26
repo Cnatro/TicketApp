@@ -24,9 +24,14 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
 class CategorySerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['img_name'] = instance.img_name.url if instance.img_name else ''
+        return data
+
     class Meta:
         model = Category
-        fields = ['id','name']
+        fields = ['id','name','img_name']
 
 class VenueSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):

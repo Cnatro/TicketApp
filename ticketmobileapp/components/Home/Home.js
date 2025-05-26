@@ -1,73 +1,121 @@
-import { FlatList, Image, Text, View } from "react-native";
+import React, { useRef } from "react";
+import { Animated, StyleSheet, Text, View, StatusBar } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import styles from "./styles";
 import { Icon, Searchbar } from "react-native-paper";
-import { useEffect, useState } from "react";
-import Apis, { endpoints } from "../../configs/Apis";
+import Category from "./Category";
+import Event from "./Event";
 
 const Home = () => {
-  const [events, setEvent] = useState([]);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
-  const loadEvent = async () => {
-    try {
-      let res = await Apis.get(endpoints["events"]);
-      setEvent(res.data);
-      console.log(res.data);
-    } catch (error) {
-        console.error("Lỗi khi tải sự kiện:", error);
-    } finally {
-    }
-  };
-
-  useEffect(() => {
-    loadEvent();
-  }, []);
-
-  const renderEvent = ({ item }) => (
-    <View style={styles.eventItem}>
-      <Image source={{ uri: item.image }} style={styles.eventImage} />
-      <View style={styles.eventInfo}>
-        <Text style={styles.eventName}>{item.name}</Text>
-        <Text style={styles.eventCategory}>{item.category_name}</Text>
-        <Text style={styles.eventDate}>
-          Bắt đầu: {new Date(item.started_date).toLocaleDateString()}
-        </Text>
-        <Text style={styles.eventVenue}>Địa điểm: {item.venue_name}</Text>
-        <Text style={styles.eventAttendees}>
-          Số người tham gia: {item.attendee_count}
-        </Text>
-      </View>
-    </View>
-  );
+  const headerBackgroundColor = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: ["#ffffff", "#fbb676"],
+    extrapolate: "clamp",
+  });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.logo}>
-            Zive
-            <Text style={styles.logoGo}>Go</Text>
-          </Text>
-          <Text style={styles.slogan}>Đi chơi đâu, lên Zivego</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <Animated.View
+        style={[
+          styles.headerContainer,
+          { backgroundColor: headerBackgroundColor },
+        ]}
+      >
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.logo}>
+              Zive
+              <Text style={styles.logoGo}>Go</Text>
+            </Text>
+            <Text style={styles.slogan}>Đi chơi đâu, lên Zivego</Text>
+          </View>
+          <Icon source="bell-outline" size={24} color="black" />
         </View>
 
-        <Icon source="bell-outline" size={24} color="black" />
-      </View>
+        <Searchbar
+          style={styles.searchBar}
+          placeholder="Tìm kiếm..."
+          inputStyle={styles.searchInput}
+          iconColor="#f15c22"
+        />
+      </Animated.View>
 
-      <Searchbar
-        style={styles.searchBar}
-        placeholder="Tìm kiếm..."
-        inputStyle={{ fontSize: 14, marginTop: 0, paddingBottom: 15 }}
-        iconColor="#f15c22"
-      />
-      <FlatList
-        data={events}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderEvent}
-        contentContainerStyle={{ paddingHorizontal: 10, paddingTop: 10 }}
-        ListEmptyComponent={<Text>Không có sự kiện nào</Text>}
-      />
+      {/* Scrollable content */}
+      <Animated.ScrollView
+        style={styles.scrollView}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <Category />
+        <Text style={styles.eventTitle}>Sự kiện</Text>
+        <Event />
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  headerContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 12,
+    borderBottomColor: "#ddd",
+    borderBottomWidth: 1,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  logo: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1c3f94",
+  },
+  logoGo: {
+    color: "#f89c1c",
+  },
+  slogan: {
+    fontSize: 12,
+    color: "#1c3f94",
+    marginTop: 2,
+  },
+  searchBar: {
+    marginTop: 6,
+    borderRadius: 100,
+    backgroundColor: "#f5f5f5",
+    height: 48,
+  },
+  searchInput: {
+    fontSize: 14,
+    marginTop: 0,
+    paddingBottom: 20,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 30,
+    paddingTop: 0,
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginTop: 8,
+    marginBottom: 16,
+  },
+});
+
 export default Home;
