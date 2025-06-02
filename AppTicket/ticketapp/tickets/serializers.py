@@ -1,24 +1,36 @@
+from tkinter.ttk import Treeview
+
+from django.contrib.auth.models import Group
 from rest_framework import serializers
 from .models import User, Category, Venue, Event, Performance, Ticket_Type, Ticket, Receipt, Comment, Review,Messages, Notification
 
 class UserSerializer(serializers.ModelSerializer):
+    role = serializers.CharField(write_only=True,required=True)
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['avatar'] = instance.avatar.url if instance.avatar else ''
+        data['role'] = instance.groups.first().name if instance.groups.exists() else ''
         return data
 
     def create(self, validated_data):
+        role = validated_data.pop('role', None)
         data = validated_data.copy()
         u = User(**data)
         u.set_password(u.password)
         u.save()
+        if role:
+            try:
+                group = Group.objects.get(name=role)
+                u.groups.add(group)
+            except Group.DoesNotExist:
+                raise serializers.ValidationError({'role': 'Role không tồn tại trong hệ thống'})
 
         return u
 
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name',
-                 'gender', 'birthday', 'avatar', 'phone', 'address']
+                 'gender', 'birthday', 'avatar', 'phone', 'address','role']
         extra_kwargs = {
             'password': {'write_only': True}
         }

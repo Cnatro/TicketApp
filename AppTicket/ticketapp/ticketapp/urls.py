@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path,include, re_path
+from django.urls import path, include, re_path
 from tickets.admin import admin_site
 from django.views.i18n import set_language
 from drf_yasg.views import get_schema_view
@@ -46,4 +46,5 @@ urlpatterns = [
     re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0),
             name='schema-redoc'),
     path('__debug__/', include(debug_toolbar.urls)),
+    path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
 ]

@@ -7,7 +7,6 @@ import Event from "./Event";
 
 const Home = () => {
   const scrollY = useRef(new Animated.Value(0)).current;
-
   const headerBackgroundColor = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: ["#ffffff", "#fbb676"],

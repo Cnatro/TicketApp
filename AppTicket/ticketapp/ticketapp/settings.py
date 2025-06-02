@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     # 'ckeditor',
     # 'ckeditor_uploader',
     'debug_toolbar',
+    'oauth2_provider',
 ]
 
 MIDDLEWARE = [
@@ -121,6 +122,9 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': ('oauth2_provider.contrib.rest_framework.OAuth2Authentication',)
+}
 
 JAZZMIN_SETTINGS = {
     # title of the window (Will default to current_admin_site.site_title if absent or None)
@@ -281,3 +285,7 @@ AUTH_USER_MODEL = "tickets.User"
 LOGIN_REDIRECT_URL = '/admin/'
 INTERNAL_IPS = ['127.0.0.1']
 ALLOWED_GROUPS = ["ROLE_ADMIN", "ROLE_STAFF", "ROLE_EVENT_ORIGANEZE"]
+OAUTH2_PROVIDER = { 'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore' }
+
+CLIENT_ID = '6OYmJrNXua1Qs7FyIr0CnJ9nC1u48nW6bMQ3diAT'
+CLIENT_SECRET = '7wITsQVtUX9klLPqzfIWpnmcI1qBkkDGG7g3zVj3SAojbn9eF3ui6DKc3SJ46gHpf0Ul860jsbt5pCcvV14QXp73YurggsXEFZBzD1FIMukLluXQ3YcwrGT4t5wPi2IE'

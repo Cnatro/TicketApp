@@ -167,12 +167,17 @@ const EventDetail = ({ route }) => {
                   {eventDetail.venue.address}
                 </Text>
               </View>
-              {eventDetail.venue.img_seat && (
-                <Image
-                  source={{ uri: eventDetail.venue.img_seat }}
-                  style={styles.venueImage}
-                />
-              )}
+              <View>
+                <Text style={[{ paddingTop: "10px" }, styles.venueName]}>
+                  Sơ đồ chỗ ngồi:{" "}
+                </Text>
+                {eventDetail.venue.img_seat && (
+                  <Image
+                    source={{ uri: eventDetail.venue.img_seat }}
+                    style={styles.venueImage}
+                  />
+                )}
+              </View>
             </View>
           )}
           {eventDetail.performances && eventDetail.performances.length > 0 && (

@@ -5,6 +5,12 @@ import Home from "./components/Home/Home";
 import EventDetail from "./components/Home/EventDetail";
 import { createStackNavigator } from "@react-navigation/stack";
 import UserHome from "./components/User/UserHome";
+import { useReducer } from "react";
+import UserReducer from "./reducers/UserReducer";
+import { DispatcherUserContext, UserContext } from "./contexts/MyContext";
+import Login from "./components/User/Login";
+import useAuth from "./Hooks/useAuth";
+import Register from "./components/User/Register";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -15,7 +21,7 @@ const HomeStack = () => {
       <Stack.Screen
         name="Home"
         component={Home}
-        options={{ title: "Trang chủ", headerShown: false }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="EventDetail"
@@ -25,38 +31,93 @@ const HomeStack = () => {
     </Stack.Navigator>
   );
 };
+
+const UserStack = () => {
+  const [userData] = useAuth();
+  const user = userData?._j || null;
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="UserHome"
+        component={UserHome}
+        options={{ headerShown: false }}
+      />
+      {user === null && (
+        <>
+          <Stack.Screen
+            name="Login"
+            component={Login}
+            options={{
+              headerTitle: "",
+              headerShadowVisible: false,
+              headerBackTitleVisible: false,
+              headerStyle: {
+                backgroundColor: "transparent",
+                elevation: 0,
+                shadowOpacity: 0,
+              },
+            }}
+          />
+          <Stack.Screen
+            name="Register"
+            component={Register}
+            options={{
+              headerTitle: "",
+              headerShadowVisible: false,
+              headerBackTitleVisible: false,
+              headerStyle: {
+                backgroundColor: "transparent",
+                elevation: 0,
+                shadowOpacity: 0,
+              },
+            }}
+          />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+};
+
 const TabNavigator = () => {
   return (
-    <Tab.Navigator>
+    <Tab.Navigator
+      screenOptions={{
+        tabBarShowLabel: false,
+        headerShown: false,
+      }}
+    >
       <Tab.Screen
         name="HomeStack"
         component={HomeStack}
         options={{
-          title: "Trang chủ",
-          tabBarShowLabel: false,
-          tabBarIcon: () => <Icon size={30} source="home-circle" />,
-          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Icon source="home" color={color} size={size} />
+          ),
         }}
       />
       <Tab.Screen
-        name="UserHome"
-        component={UserHome}
+        name="UserStack"
+        component={UserStack}
         options={{
-          title: "Người dùng",
-          tabBarShowLabel: false,
-          tabBarIcon: () => <Icon size={30} source="account" />,
-          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Icon source="account" color={color} size={size} />
+          ),
         }}
       />
     </Tab.Navigator>
   );
 };
-
 const App = () => {
+  const [user, dispatch] = useReducer(UserReducer, null);
+
   return (
-    <NavigationContainer>
-      <TabNavigator />
-    </NavigationContainer>
+    <UserContext.Provider value={user}>
+      <DispatcherUserContext.Provider value={dispatch}>
+        <NavigationContainer>
+          <TabNavigator />
+        </NavigationContainer>
+      </DispatcherUserContext.Provider>
+    </UserContext.Provider>
   );
 };
 export default App;
