@@ -63,7 +63,7 @@ class VenueViewSet(viewsets.ViewSet, generics.ListAPIView):
         return Response(serializer.data)
 
 class EventViewSet(viewsets.ViewSet, generics.ListAPIView):
-    queryset = Event.objects.filter(active=True)
+    queryset = Event.objects.filter(active=True).order_by('started_date')
     serializer_class = serializers.EventListSerializer
 
     def retrieve(self, request, pk=None):

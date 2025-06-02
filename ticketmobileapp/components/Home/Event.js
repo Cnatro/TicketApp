@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { useEffect, useState } from "react";
 import Apis, { endpoints } from "../../configs/Apis";
+import { useNavigation } from "@react-navigation/native";
+import Spinner from "../Utils/spinner";
 
 const { width } = Dimensions.get("window");
 const ITEM_SPACING = 10; // khoảng cách giữa các item và lề
@@ -17,13 +19,18 @@ const itemWidth = (width - ITEM_SPACING * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
 const Event = () => {
   const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const navigation = useNavigation();
 
   const loadEvent = async () => {
     try {
+      setLoading(true);
       let res = await Apis.get(endpoints["events"]);
       setEvents(res.data);
     } catch (error) {
       console.error("Lỗi khi tải sự kiện:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -31,51 +38,57 @@ const Event = () => {
     loadEvent();
   }, []);
 
-  const renderEventItem = ({ item, index }) => (
-    <TouchableOpacity>
-      <View
-        style={[
-          styles.eventItem,
-          {
-            marginRight: (index + 1) % NUM_COLUMNS === 0 ? 0 : ITEM_SPACING,
-          },
-        ]}
-      >
-        <Image source={{ uri: item.image }} style={styles.eventImage} />
-        <View style={styles.eventInfo}>
-          <Text style={styles.eventName} numberOfLines={2}>
-            {item.name}
-          </Text>
-          <Text style={styles.eventDate}>
-            Bắt đầu: {new Date(item.started_date).toLocaleDateString()}
-          </Text>
-          <Text style={styles.eventVenue} numberOfLines={1}>
-            Địa điểm: {item.venue_name}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
   return (
     <View style={styles.container}>
+      {loading && <Spinner />}
       {events.length === 0 ? (
         <Text style={styles.emptyText}>Không có sự kiện nào</Text>
       ) : (
-        <FlatList
-          data={events}
-          renderItem={renderEventItem}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={NUM_COLUMNS}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-        />
+        <View style={styles.gridContainer}>
+          {events.map((item, index) => (
+            <TouchableOpacity
+              key={item.id}
+              onPress={() =>
+                navigation.navigate("EventDetail", { eventId: item.id })
+              }
+            >
+              <View
+                style={[
+                  styles.eventItem,
+                  {
+                    marginRight:
+                      (index + 1) % NUM_COLUMNS === 0 ? 0 : ITEM_SPACING,
+                  },
+                ]}
+              >
+                <Image source={{ uri: item.image }} style={styles.eventImage} />
+                <View style={styles.eventInfo}>
+                  <Text style={styles.eventName} numberOfLines={2}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.eventDate}>
+                    Bắt đầu: {new Date(item.started_date).toLocaleDateString()}
+                  </Text>
+                  <Text style={styles.eventVenue} numberOfLines={1}>
+                    Địa điểm: {item.venue_name}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
       )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  gridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingLeft: ITEM_SPACING,
+    paddingTop: ITEM_SPACING,
+  },
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
