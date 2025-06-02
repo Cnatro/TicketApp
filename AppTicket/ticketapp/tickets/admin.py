@@ -30,7 +30,7 @@ class BaseModelAdmin(admin.ModelAdmin):
         self.model_name = model._meta.model_name
         super().__init__(model, admin_site)
 
-    def has_permission(self, request, action,obj = None):
+    def has_permission(self, request, action, obj=None):
         if not request.user.is_superuser and isinstance(obj, User):
             return obj is not None and obj == request.user
 
@@ -38,16 +38,16 @@ class BaseModelAdmin(admin.ModelAdmin):
         return request.user.has_perm(perm)
 
     def has_view_permission(self, request, obj=None):
-        return self.has_permission(request, "view",obj)
+        return self.has_permission(request, "view", obj)
 
     def has_add_permission(self, request):
         return self.has_permission(request, "add")
 
     def has_delete_permission(self, request, obj=None):
-        return self.has_permission(request, "delete",obj)
+        return self.has_permission(request, "delete", obj)
 
     def has_change_permission(self, request, obj=None):
-        return self.has_permission(request, "change",obj)
+        return self.has_permission(request, "change", obj)
 
     def actions_link(self, obj):
         edit_url = reverse(f'admin:{obj._meta.app_label}_{obj._meta.model_name}_change', args=[obj.pk])
@@ -83,7 +83,6 @@ class UserModelAdmin(BaseModelAdmin):
 
     get_groups.short_description = 'Groups'
 
-
     def has_module_permission(self, request):
         return request.user.is_superuser
 
@@ -97,7 +96,7 @@ class UserModelAdmin(BaseModelAdmin):
         if getattr(request, "_exclude_self", False):
             qs = qs.exclude(pk=request.user.pk)
 
-        if not request.user.is_superuser :
+        if not request.user.is_superuser:
             qs = qs.filter(pk=request.user.pk)
         return qs
 
@@ -131,7 +130,8 @@ class EventModelAdmin(BaseModelAdmin):
     exclude = ['status', 'user']
 
     def time_event(self, obj):
-        return f"{obj.started_date.strftime('%d/%m/%Y %H:%M')} -- {obj.ended_date.strftime('%d/%m/%Y %H:%M')}"
+        return format_html('{}<br>--<br>{}', obj.started_date.strftime('%d/%m/%Y %H:%M'),
+                           obj.ended_date.strftime('%d/%m/%Y %H:%M'))
 
     time_event.short_description = "Event time"
 

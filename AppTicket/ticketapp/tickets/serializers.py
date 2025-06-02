@@ -24,9 +24,14 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
 class CategorySerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['img_name'] = instance.img_name.url if instance.img_name else ''
+        return data
+
     class Meta:
         model = Category
-        fields = ['id','name']
+        fields = ['id','name','img_name']
 
 class VenueSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
@@ -36,7 +41,7 @@ class VenueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Venue
-        fields = ['id', 'name', 'capacity', 'img_seat', 'address', 'active']
+        fields = ['id', 'name', 'img_seat', 'address']
 
 
 class PerformanceSerializer(serializers.ModelSerializer):
@@ -67,7 +72,7 @@ class TicketSerializer(serializers.ModelSerializer):
 
 
 class EventListSerializer(serializers.ModelSerializer):
-    category_name = serializers.CharField(source='category.name', read_only=True)
+    # category_name = serializers.CharField(source='category.name', read_only=True)
     venue_name = serializers.CharField(source='venue.name', read_only=True)
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -76,8 +81,7 @@ class EventListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Event
-        fields = ['id', 'name', 'image', 'attendee_count', 'started_date',
-                 'ended_date', 'status', 'category_name', 'venue_name']
+        fields = ['id', 'name', 'image', 'started_date', 'venue_name']
 
 
 class EventDetailSerializer(serializers.ModelSerializer):
@@ -85,6 +89,11 @@ class EventDetailSerializer(serializers.ModelSerializer):
     venue = VenueSerializer(read_only=True)
     performances = PerformanceSerializer(many=True, read_only=True)
     ticket_types = TicketTypeSerializer(many=True, read_only=True)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['image'] = instance.image.url if instance.image else ''
+        return data
 
     class Meta:
         model = Event

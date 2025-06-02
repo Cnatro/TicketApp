@@ -27,7 +27,7 @@ class BasicModel(models.Model):
 
 class Category(BasicModel):
     name = models.CharField(max_length=50)
-
+    img_name = CloudinaryField("img_name", null=True, blank=True)
     def __str__(self):
         return self.name
 
