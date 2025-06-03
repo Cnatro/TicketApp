@@ -2,10 +2,13 @@ from tkinter.ttk import Treeview
 
 from django.contrib.auth.models import Group
 from rest_framework import serializers
-from .models import User, Category, Venue, Event, Performance, Ticket_Type, Ticket, Receipt, Comment, Review,Messages, Notification
+from .models import User, Category, Venue, Event, Performance, Ticket_Type, Ticket, Receipt, Comment, Review, Messages, \
+    Notification
+
 
 class UserSerializer(serializers.ModelSerializer):
-    role = serializers.CharField(write_only=True,required=True)
+    role = serializers.CharField(write_only=True, required=True)
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['avatar'] = instance.avatar.url if instance.avatar else ''
@@ -30,10 +33,11 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name',
-                 'gender', 'birthday', 'avatar', 'phone', 'address','role']
+                  'gender', 'birthday', 'avatar', 'phone', 'address', 'role', 'password']
         extra_kwargs = {
             'password': {'write_only': True}
         }
+
 
 class CategorySerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
@@ -43,7 +47,8 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ['id','name','img_name']
+        fields = ['id', 'name', 'img_name']
+
 
 class VenueSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
@@ -73,19 +78,30 @@ class TicketTypeSerializer(serializers.ModelSerializer):
         model = Ticket_Type
         fields = ['id', 'name', 'quantity', 'price', 'event', 'active']
 
+
 class TicketSerializer(serializers.ModelSerializer):
     event_name = serializers.CharField(source='ticket_type.event.name', read_only=True)
     ticket_types = TicketTypeSerializer(many=True, read_only=True)
 
     class Meta:
         model = Ticket
-        fields = ['id', 'code_qr', 'is_checked_in', 'quantity','ticket_types','event_name']
+        fields = ['id', 'code_qr', 'is_checked_in', 'quantity', 'ticket_types', 'event_name']
 
+
+class TicketCreateSerializer(serializers.Serializer):
+    ticket_type_id = serializers.IntegerField()
+    quantity = serializers.IntegerField(min_value=1)
+
+    def validate_ticket_type_id(self, value):
+        if not Ticket_Type.objects.filter(pk=value, active=True).exists():
+            raise serializers.ValidationError("Ticket type không tồn tại hoặc đã bị khoá.")
+        return value
 
 
 class EventListSerializer(serializers.ModelSerializer):
     # category_name = serializers.CharField(source='category.name', read_only=True)
     venue_name = serializers.CharField(source='venue.name', read_only=True)
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['image'] = instance.image.url if instance.image else ''
@@ -146,4 +162,54 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = ['id', 'title', 'content', 'is_read', 'user', 'event', 'event_name']
+
+
+class ReceiptCreateSerializer(serializers.ModelSerializer):
+    tickets = TicketCreateSerializer(many=True, write_only=True)
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    tickets_output = serializers.SerializerMethodField()
+    user_name = serializers.SerializerMethodField()
+
+    def get_tickets_output(self, objs):
+        tickets_output = objs.tickets.all()
+        return TicketSerializer(tickets_output, many=True).data
+
+    def get_user_name(self, obj):
+        return obj.user.username if obj.user else None
+
+    def create(self, validated_data):
+        tickets = validated_data.pop("tickets")
+        data = validated_data.copy()
+
+        user = self.context['request'].user
+        receipt = Receipt(user=user, is_paid=True, **data)
+        receipt.save()
+
+        for ticket_data in tickets:
+            ticket_type = Ticket_Type.objects.get(pk=ticket_data['ticket_type_id'])
+            ticket_type.quantity -= ticket_data['quantity']
+            ticket_type.save()
+
+            Ticket.objects.create(
+                receipt=receipt,
+                ticket_type=ticket_type,
+                quantity=ticket_data['quantity']
+            )
+        return receipt
+
+    class Meta:
+        model = Receipt
+        fields = ["id","payment_method", "total_quantity", "total_price", "tickets", "user", "user_name", "tickets_output"]
+        extra_kwargs = {
+            'user': {'write_only': True},
+            'tickets': {'write_only': True}
+        }
+
+
+class ReceiptSerializer(serializers.ModelSerializer):
+    tickets = TicketSerializer(many=True,read_only=True)
+
+    class Meta:
+        model = Receipt
+        fields = ["id", "payment_method", "total_quantity", "total_price", "tickets"]
 

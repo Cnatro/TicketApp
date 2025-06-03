@@ -11,6 +11,8 @@ import { DispatcherUserContext, UserContext } from "./contexts/MyContext";
 import Login from "./components/User/Login";
 import useAuth from "./Hooks/useAuth";
 import Register from "./components/User/Register";
+import Ticket from "./components/Home/Ticket";
+import Receipted from "./components/Home/Receipted";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -28,6 +30,11 @@ const HomeStack = () => {
         component={EventDetail}
         options={{ title: "Chi tiết sự kiện" }}
       />
+      <Stack.Screen
+        name="Ticket"
+        component={Ticket}
+        options={{ title: "Đặt vé" }}
+      />
     </Stack.Navigator>
   );
 };
@@ -41,6 +48,11 @@ const UserStack = () => {
         name="UserHome"
         component={UserHome}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Receipted"
+        component={Receipted}
+        options={{ title: "Vé đã mua" }}
       />
       {user === null && (
         <>

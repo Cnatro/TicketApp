@@ -13,6 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import useAuth from "../../Hooks/useAuth";
 import Apis, { authApis, endpoints } from "../../configs/Apis";
 import Spinner from "../Utils/spinner";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Login = () => {
   const [user, setUser] = useState({
@@ -37,6 +38,7 @@ const Login = () => {
           "7wITsQVtUX9klLPqzfIWpnmcI1qBkkDGG7g3zVj3SAojbn9eF3ui6DKc3SJ46gHpf0Ul860jsbt5pCcvV14QXp73YurggsXEFZBzD1FIMukLluXQ3YcwrGT4t5wPi2IE",
         grant_type: "password",
       });
+      await AsyncStorage.setItem('token', res.data.access_token);
       let u = await authApis(res.data.access_token).get(
         endpoints["current-user"]
       );

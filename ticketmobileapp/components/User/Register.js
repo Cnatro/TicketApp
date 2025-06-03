@@ -8,6 +8,10 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import Spinner from "../Utils/spinner";
@@ -114,87 +118,97 @@ const Register = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {loading && <Spinner />}
-      <Text style={styles.title}>Đăng ký</Text>
-      <Text style={styles.subtitle}>Đăng ký tài khoản thành viên</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView contentContainerStyle={styles.container}  keyboardShouldPersistTaps="handled">
+          {loading && <Spinner />}
+          <Text style={styles.title}>Đăng ký</Text>
+          <Text style={styles.subtitle}>Đăng ký tài khoản thành viên</Text>
 
-      {personalInfo.map((item) => (
-        <View key={item.field} style={styles.inputGroup}>
-          <Text style={styles.label}>{item.label}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={item.placeholder}
-            value={user[item.field]}
-            onChangeText={(text) => setState(text, item.field)}
-          />
-        </View>
-      ))}
+          {personalInfo.map((item) => (
+            <View key={item.field} style={styles.inputGroup}>
+              <Text style={styles.label}>{item.label}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={item.placeholder}
+                value={user[item.field]}
+                onChangeText={(text) => setState(text, item.field)}
+              />
+            </View>
+          ))}
 
-      <Text style={styles.label}>Vai trò</Text>
-      <View style={styles.roleContainer}>
-        <TouchableOpacity
-          style={[styles.roleButton, role === 1 && styles.roleSelectedLeft]}
-          onPress={() => setRole(1)}
-        >
-          <Text
-            style={[styles.roleText, role === 1 && styles.roleTextSelected]}
-          >
-            Khách hàng
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.roleButton, role === 2 && styles.roleSelectedRight]}
-          onPress={() => setRole(2)}
-        >
-          <Text
-            style={[styles.roleText, role === 2 && styles.roleTextSelected]}
-          >
-            Nhà tổ chức
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity onPress={picker}>
-        <Text>Chọn ảnh đại diện...</Text>
-      </TouchableOpacity>
-      {user?.avatar && (
-        <View style={{ alignItems: "center", marginVertical: 16 }}>
-          <Image
-            source={{ uri: user.avatar.uri }}
-            style={{
-              width: 120,
-              height: 120,
-              borderRadius: 60,
-              borderWidth: 2,
-              borderColor: "#6A1B9A",
-            }}
-          />
-        </View>
-      )}
+          <Text style={styles.label}>Vai trò</Text>
+          <View style={styles.roleContainer}>
+            <TouchableOpacity
+              style={[styles.roleButton, role === 1 && styles.roleSelectedLeft]}
+              onPress={() => setRole(1)}
+            >
+              <Text
+                style={[styles.roleText, role === 1 && styles.roleTextSelected]}
+              >
+                Khách hàng
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.roleButton,
+                role === 2 && styles.roleSelectedRight,
+              ]}
+              onPress={() => setRole(2)}
+            >
+              <Text
+                style={[styles.roleText, role === 2 && styles.roleTextSelected]}
+              >
+                Nhà tổ chức
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity onPress={picker}>
+            <Text>Chọn ảnh đại diện...</Text>
+          </TouchableOpacity>
+          {user?.avatar && (
+            <View style={{ alignItems: "center", marginVertical: 16 }}>
+              <Image
+                source={{ uri: user.avatar.uri }}
+                style={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: 60,
+                  borderWidth: 2,
+                  borderColor: "#6A1B9A",
+                }}
+              />
+            </View>
+          )}
 
-      <Text style={styles.sectionTitle}>Thông tin đăng nhập</Text>
+          <Text style={styles.sectionTitle}>Thông tin đăng nhập</Text>
 
-      {loginInfo.map((item) => (
-        <View key={item.field} style={styles.inputGroup}>
-          <Text style={styles.label}>{item.label}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={item.placeholder}
-            secureTextEntry={item.secureTextEntry}
-            value={user[item.field]}
-            onChangeText={(text) => setState(text, item.field)}
-          />
-        </View>
-      ))}
+          {loginInfo.map((item) => (
+            <View key={item.field} style={styles.inputGroup}>
+              <Text style={styles.label}>{item.label}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={item.placeholder}
+                secureTextEntry={item.secureTextEntry}
+                value={user[item.field]}
+                onChangeText={(text) => setState(text, item.field)}
+              />
+            </View>
+          ))}
 
-      <TouchableOpacity style={styles.button} onPress={registerUser}>
-        <Text style={styles.buttonText}>Đăng kí</Text>
-      </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={registerUser}>
+            <Text style={styles.buttonText}>Đăng kí</Text>
+          </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.footerText}>Đăng nhập</Text>
-      </TouchableOpacity>
-    </ScrollView>
+          <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+            <Text style={styles.footerText}>Đăng nhập</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 

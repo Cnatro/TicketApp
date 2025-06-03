@@ -11,9 +11,11 @@ import {
 import { Divider, IconButton, ProgressBar } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import useAuth from "../../Hooks/useAuth";
+import { useNavigation } from "@react-navigation/native";
 
 const Profile = () => {
   const [userData, auth] = useAuth();
+  const navigation = useNavigation()
   const progress = 180 / 10000;
   const user = userData._j;
   return (
@@ -69,7 +71,7 @@ const Profile = () => {
 
         <MenuItem label="Thông tin cá nhân" />
         <MenuItem label="Đổi mật khẩu" />
-        <MenuItem label="Vé đã mua" />
+        <MenuItem label="Vé đã mua" onNavigator={()=>navigation.navigate("Receipted")}/>
         <MenuItem label="Hỏi đáp" />
 
         <View style={styles.hotline}>
@@ -89,8 +91,8 @@ const Profile = () => {
   );
 };
 
-const MenuItem = ({ label }) => (
-  <TouchableOpacity style={styles.menuItem}>
+const MenuItem = ({ label,onNavigator }) => (
+  <TouchableOpacity style={styles.menuItem} onPress={onNavigator}>
     <Text style={styles.menuText}>{label}</Text>
     <Icon name="keyboard-arrow-right" size={24} color="#999" />
   </TouchableOpacity>
