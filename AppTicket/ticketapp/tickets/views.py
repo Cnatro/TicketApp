@@ -15,7 +15,7 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
     serializer_class = serializers.UserSerializer
     parser_classes = [parsers.MultiPartParser]
 
-    @action(detail=False, methods=['get'], url_path='current-user', permission_classes = [IsAuthenticated])
+    @action(detail=False, methods=['get', 'patch'], url_path='current-user', permission_classes = [IsAuthenticated])
     def get_current_user(self, request):
         u = request.user
         if request.method.__eq__('PATCH'):

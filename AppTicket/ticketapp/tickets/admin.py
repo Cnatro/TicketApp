@@ -11,6 +11,7 @@ from io import BytesIO
 from django.db.models import Avg
 from ticketapp.settings import ALLOWED_GROUPS
 from django.contrib.auth.hashers import make_password
+import requests
 
 
 class TicketAppAdminSite(admin.AdminSite):
@@ -111,11 +112,35 @@ class UserModelAdmin(BaseModelAdmin):
 
 
 class VenueModelAdmin(BaseModelAdmin):
-    list_display = ['id', 'name', 'capacity', 'active', 'actions_link']
+    list_display = ['id', 'name', 'address', 'latitude', 'longitude', 'capacity', 'active', 'actions_link']
     list_display_links = ['name']
-    search_fields = ['name']
+    search_fields = ['name', 'address']
     list_filter = ['active', 'created_date']
     list_per_page = 5
+
+    def save_model(self, request, obj, form, change):
+        if obj.address and not (obj.latitude and obj.longitude):
+            try:
+                url = "https://nominatim.openstreetmap.org/search"
+                params = {
+                    'q': obj.address,
+                    'format': 'json',
+                    'limit': 1,
+                    'countrycodes': 'vn'
+                }
+                headers = {
+                    'User-Agent': 'ticketmobileapp/1.0 (nhantran.011004@gmail.com)'
+                }
+                response = requests.get(url, params=params, headers=headers)
+                data = response.json()
+                if data:
+                    obj.latitude = float(data[0]['lat'])
+                    obj.longitude = float(data[0]['lon'])
+                else:
+                    print(f"Không tìm thấy tọa độ cho địa chỉ: {obj.address}")
+            except Exception as e:
+                print(f"Lỗi khi lấy tọa độ: {e}")
+        super().save_model(request, obj, form, change)
 
 
 class EventModelAdmin(BaseModelAdmin):

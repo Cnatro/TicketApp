@@ -5,6 +5,7 @@ import Home from "./components/Home/Home";
 import EventDetail from "./components/Home/EventDetail";
 import { createStackNavigator } from "@react-navigation/stack";
 import UserHome from "./components/User/UserHome";
+import EventCategory from "./components/Home/EventCategory";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -21,6 +22,10 @@ const HomeStack = () => {
         name="EventDetail"
         component={EventDetail}
         options={{ title: "Chi tiết sự kiện" }}
+      />
+      <Stack.Screen
+        name="EventCategory"
+        component={EventCategory}
       />
     </Stack.Navigator>
   );

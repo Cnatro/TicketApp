@@ -90,7 +90,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "ticketdb",
         "USER": "root",
-        "PASSWORD": "Admin123@",
+        "PASSWORD": "root",
         "HOST": "",
         "PORT": "3306",
     }

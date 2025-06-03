@@ -41,7 +41,7 @@ class VenueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Venue
-        fields = ['id', 'name', 'img_seat', 'address']
+        fields = ['id', 'name', 'address', 'latitude', 'longitude', 'img_seat', 'address']
 
 
 class PerformanceSerializer(serializers.ModelSerializer):
