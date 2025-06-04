@@ -1,9 +1,16 @@
 from idlelib.rpc import request_queue
 
 from django.contrib import admin
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import Group, Permission
+from django.http import HttpResponseRedirect
+from django.shortcuts import render
 from django.utils.html import format_html
-from django.urls import reverse
+from django.urls import reverse, path
+from rest_framework.decorators import api_view
+from rest_framework.generics import get_object_or_404
+from rest_framework.response import Response
+
 from .models import *
 import qrcode
 import base64
@@ -21,6 +28,15 @@ class TicketAppAdminSite(admin.AdminSite):
             return False
 
         return request.user.groups.filter(name__in=ALLOWED_GROUPS).exists()
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('chat/', self.admin_view(admin_chat_view), name='admin_chat'),
+            path('verify-ticket/', self.admin_view(verify_ticket_page), name="admin_check_ticket"),
+            path('api/verify-ticket/', verify_ticket, name='verify_ticket'),
+        ]
+        return custom_urls + urls
 
 
 class BaseModelAdmin(admin.ModelAdmin):
@@ -241,6 +257,60 @@ class GroupModelAdmin(BaseModelAdmin):
     list_display_links = ['name']
 
 
+@staff_member_required
+def admin_chat_view(request):
+    chat_users = User.objects.filter(groups__name="ROLE_CUSTOMER")
+
+    selected_user_id = request.GET.get('user_id')
+    selected_user = None
+    room_name = None
+    messages = []
+
+    if selected_user_id:
+        selected_user = get_object_or_404(User, id=selected_user_id)
+        room_name = f"room_{selected_user.id}"
+
+        if request.method == "POST":
+            content = request.POST.get('message')
+            if content:
+                Messages.objects.create(sender=selected_user, content=content, from_admin=True)
+            return HttpResponseRedirect(f"?user_id={selected_user_id}")
+
+        messages = Messages.objects.filter(room__name=room_name).order_by('created_date')
+    context = {
+        'chat_users': chat_users,
+        'selected_user': selected_user,
+        'messages': messages,
+        'room_name': room_name
+    }
+    return render(request, 'admin/chat_view.html', context)
+
+
+@staff_member_required
+def verify_ticket_page(request):
+    return render(request, 'admin/verify_ticket.html')
+
+
+@api_view(['GET'])
+def verify_ticket(request):
+    receipt_id = request.GET.get('receipt_id')
+    ticket_type_id = request.GET.get('ticket_type_id')
+
+    try:
+        ticket = Ticket.objects.get(receipt_id=receipt_id, ticket_type_id=ticket_type_id)
+
+        if ticket.is_checked_in:
+            return Response({'message': 'Vé đã được sử dụng!'}, status=400)
+        # elif ticket.ticket_type.event.ended_date < timezone.now():
+        #     return Response({'message': 'Sự kiện đã kết thúc!'}, status=400)
+        else:
+            ticket.is_checked_in = True
+            ticket.save()
+            return Response({'message': 'Vé hợp lệ. Cho phép vào!'})
+    except Ticket.DoesNotExist:
+        return Response({'message': 'Không tìm thấy vé!'}, status=404)
+
+
 admin_site = TicketAppAdminSite(name="myAdminSite")
 admin_site.register(User, UserModelAdmin)
 admin_site.register(Category, CategoryModelAdmin)
@@ -254,4 +324,5 @@ admin_site.register(Group, GroupModelAdmin)
 admin_site.register(Permission, PermissionModelAdmin)
 # admin_site.register(Comment)
 admin_site.register(Review)
-# admin_site.register(Messages)
+admin_site.register(Messages)
+admin_site.register(ChatRoom)

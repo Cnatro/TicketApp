@@ -146,7 +146,15 @@ const Ticket = ({ route }) => {
                 VNĐ
               </Text>
             </View>
-            <TouchableOpacity style={styles.checkoutButton} onPress={onReceipt}>
+            <TouchableOpacity
+              style={styles.checkoutButton}
+              onPress={() =>
+                navigation.navigate("PayPal", {
+                  totalPrice: totalPrice,
+                  onReceipt: onReceipt,
+                })
+              }
+            >
               <Text style={styles.checkoutButtonText}>Thanh toán</Text>
             </TouchableOpacity>
           </ScrollView>

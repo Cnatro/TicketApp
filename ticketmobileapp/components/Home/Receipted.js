@@ -21,8 +21,7 @@ const Receipted = () => {
 
       const token = await AsyncStorage.getItem("token");
       let res = await authApis(token).get(`${endpoints["receipt"]}/latest/`);
-      setReceiptLatest(res.data);
-      console.log(receiptLatest)
+      if (res.status === 200) setReceiptLatest(res.data);
     } catch (error) {
       console.error("Lỗi load vé đã mua", error);
     } finally {
@@ -36,7 +35,7 @@ const Receipted = () => {
 
   return (
     <>
-      {receiptLatest ? (
+      {receiptLatest && receiptLatest.id > 0 ? (
         <View style={styles.container}>
           {loading && <Spinner />}
           <Text style={styles.header}>🧾 Hóa đơn #{receiptLatest.id}</Text>
@@ -64,7 +63,11 @@ const Receipted = () => {
           />
         </View>
       ) : (
-        <Text>Bạn chưa có giao dịch nào trên ZiveGO</Text>
+        <View style={styles.container}>
+          <Text style={styles.noReceiptText}>
+            Bạn chưa có giao dịch nào trên ZiveGO
+          </Text>
+        </View>
       )}
     </>
   );
@@ -208,6 +211,12 @@ const styles = StyleSheet.create({
     fontFamily: "monospace",
     color: "#4b5563",
     fontSize: 10,
+    textAlign: "center",
+  },
+  noReceiptText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#6b7280",
     textAlign: "center",
   },
 });

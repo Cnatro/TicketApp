@@ -1,0 +1,56 @@
+{% extends 'admin/base_site.html' %}
+{% block content %}
+<h1>Quét mã QR xác thực vé</h1>
+
+<div id="reader" style="width:300px; border: 3px solid #ccc; transition: border 0.3s;"></div>
+<div id="result" style="margin-top: 20px; font-size: 18px; font-weight: bold;"></div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+    const readerBox = document.getElementById("reader");
+
+    function onScanSuccess(decodedText) {
+      readerBox.style.border = "3px solid green";
+      readerBox.classList.add("flash");
+
+      setTimeout(() => {
+        readerBox.style.border = "3px solid #ccc";
+        readerBox.classList.remove("flash");
+      }, 1000);
+
+      const firstLine = decodedText.split('\n')[0]; // → "ID: RC:12||TT:3"
+
+      const match = firstLine.match(/RC:(\d+)\|\|TT:(\d+)/);
+      if (match) {
+        const receiptId = match[1]; // 12
+        const ticketTypeId = match[2]; // 3
+
+    fetch(`/admin/api/verify-ticket/?receipt_id=${receiptId}&ticket_type_id=${ticketTypeId}`)
+      .then(res => res.json())
+      .then(data => {
+      alert(data.message);
+      });
+  } else {
+    document.getElementById('result').innerHTML = `<span style="color:red">Mã QR không hợp lệ!</span>`;
+  }
+    }
+
+    const qr = new Html5Qrcode("reader");
+    qr.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, onScanSuccess);
+</script>
+
+<!-- CSS rung nhẹ -->
+<style>
+    .flash {
+      animation: flash-border 0.5s;
+    }
+
+    @keyframes flash-border {
+      0% { transform: scale(1); }
+      25% { transform: scale(1.03); }
+      50% { transform: scale(0.97); }
+      75% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+</style>
+{% endblock %}

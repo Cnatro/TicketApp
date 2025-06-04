@@ -4,9 +4,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon, Searchbar } from "react-native-paper";
 import Category from "./Category";
 import Event from "./Event";
+import { TouchableOpacity } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import useAuth from "../../Hooks/useAuth";
 
 const Home = () => {
+  const [userData] = useAuth();
+  const user = userData?._j || null;
   const scrollY = useRef(new Animated.Value(0)).current;
+  const navigation = useNavigation();
   const headerBackgroundColor = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: ["#ffffff", "#fbb676"],
@@ -30,7 +36,17 @@ const Home = () => {
             </Text>
             <Text style={styles.slogan}>Đi chơi đâu, lên Zivego</Text>
           </View>
-          <Icon source="bell-outline" size={24} color="black" />
+          <View style={styles.iconContainer}>
+            <Icon source="bell-outline" size={24} color="black" />
+            {user !== null && (
+              <TouchableOpacity
+                style={styles.iconSpacing}
+                onPress={() => navigation.navigate("ChatBox")}
+              >
+                <Icon source="message-reply-outline" size={24} color="black" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <Searchbar
@@ -114,6 +130,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 8,
     marginBottom: 16,
+  },
+  iconContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconSpacing: {
+    marginLeft: 10,
   },
 });
 

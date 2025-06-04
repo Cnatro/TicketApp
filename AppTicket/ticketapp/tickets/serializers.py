@@ -199,7 +199,8 @@ class ReceiptCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Receipt
-        fields = ["id","payment_method", "total_quantity", "total_price", "tickets", "user", "user_name", "tickets_output"]
+        fields = ["id", "payment_method", "total_quantity", "total_price", "tickets", "user", "user_name",
+                  "tickets_output"]
         extra_kwargs = {
             'user': {'write_only': True},
             'tickets': {'write_only': True}
@@ -207,9 +208,19 @@ class ReceiptCreateSerializer(serializers.ModelSerializer):
 
 
 class ReceiptSerializer(serializers.ModelSerializer):
-    tickets = TicketSerializer(many=True,read_only=True)
+    tickets = TicketSerializer(many=True, read_only=True)
 
     class Meta:
         model = Receipt
         fields = ["id", "payment_method", "total_quantity", "total_price", "tickets"]
 
+
+class MessagesSerializer(serializers.ModelSerializer):
+    sender = serializers.CharField(source="sender.username", read_only=True)
+    room_id = serializers.IntegerField(source="room.id", read_only=True)
+    message = serializers.CharField(source="content",read_only=True)
+    time = serializers.DateTimeField(source="sent_at",read_only=True)
+
+    class Meta:
+        model = Messages
+        fields = ["id", "message", "time", "room_id", "sender"]

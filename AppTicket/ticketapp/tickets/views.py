@@ -1,17 +1,20 @@
-from lib2to3.fixes.fix_input import context
-from tkinter import EventType
 
-from django.template.defaulttags import querystring
-from django.views.generic import detail
+
+from django.utils import timezone
+
 from rest_framework.response import Response
 from rest_framework import viewsets, permissions, filters, generics, parsers, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 
 from .models import User, Category, Venue, Event, Performance, Ticket_Type, Ticket, Receipt, Comment, Review, Messages, \
-    Notification
+    Notification, ChatRoom
 from tickets import serializers
-from tickets.serializers import UserSerializer, CategorySerializer, TicketTypeSerializer,ReceiptCreateSerializer,ReceiptSerializer
+from tickets.serializers import UserSerializer, CategorySerializer, TicketTypeSerializer, ReceiptCreateSerializer, \
+    ReceiptSerializer
+from tickets.paypal_configs import paypalrestsdk
+
+from .serializers import MessagesSerializer
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
@@ -68,14 +71,16 @@ class VenueViewSet(viewsets.ViewSet, generics.ListAPIView):
 
 
 class EventViewSet(viewsets.ViewSet, generics.ListAPIView):
-    queryset = Event.objects.filter(active=True).order_by('started_date')
+    current_day = timezone.now()
+    queryset = Event.objects.filter(active=True,ended_date__gt=current_day).order_by('started_date')
     serializer_class = serializers.EventListSerializer
 
     def retrieve(self, request, pk=None):
         try:
             event = self.get_queryset().get(pk=pk)
         except Event.DoesNotExist:
-            return Response({'error': 'Event not found'}, status=404)
+            return Response({'error':
+                                 'Event not found'}, status=404)
         serializer = serializers.EventDetailSerializer(event, context={'request': request})
         return Response(serializer.data)
 
@@ -110,10 +115,77 @@ class ReceiptViewSet(viewsets.ViewSet, generics.CreateAPIView):
     @action(methods=['get'], detail=False, url_path='latest')
     def get_latest_receipt(self, request):
         user = request.user
-        latest_receipt = Receipt.objects.filter(user=user).order_by('-created_date').first()
+        now = timezone.now()
+        latest_receipt = Receipt.objects.filter(
+            user=user,
+            tickets__ticket_type__event__ended_date__gt=now).order_by('-created_date').first()
         if not latest_receipt:
             return Response({'message': 'Chưa có hóa đơn nào'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = serializers.ReceiptSerializer(latest_receipt)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+class PayPalViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    @action(methods=["post"], detail=False, url_path="create-payment")
+    def create_payment(self, request):
+
+        total = request.data.get("total", "10.00")
+        currency = "USD"
+        return_url = request.data.get("return_url")
+        cancel_url = request.data.get("cancel_url")
+
+        payment = paypalrestsdk.Payment({
+            "intent": "sale",  # trả ngay khi bấm đồng ý
+            "payer": {"payment_method": "paypal"},
+            "redirect_urls": {
+                "return_url": return_url,
+                "cancel_url": cancel_url,
+            },
+            "transactions": [{
+                "amount": {
+                    "total": total,
+                    "currency": currency,
+                },
+                "description": "ZiveGO Ticket Payment"
+            }]
+        })
+
+        if payment.create():
+            for link in payment.links:
+                if link.rel == "approval_url":
+                    return Response({
+                        "approval_url": link.href,
+                        "payment_id": payment.id,
+                    })
+        else:
+            return Response({"error": payment.error}, status=400)
+
+    @action(detail=False, methods=["post"], url_path="execute-payment")
+    def execute(self, request):
+        payment_id = request.data.get("payment_id")
+        payer_id = request.data.get("payer_id")
+
+        payment = paypalrestsdk.Payment.find(payment_id)
+        if payment.execute({"payer_id": payer_id}):
+            return Response({"status": "success", "payment": payment.to_dict()})
+        else:
+            return Response({"error": payment.error}, status=400)
+
+
+class ChatRoomViewSet(viewsets.ViewSet,generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @action(methods=['get'], detail=False, url_path="room-messages")
+    def get_my_room_messages(self, request):
+        user = request.user
+        try:
+            room = ChatRoom.objects.get(customer=user)
+        except ChatRoom.DoesNotExist:
+            return Response({"detail": "User chưa có phòng chat"}, status=status.HTTP_404_NOT_FOUND)
+
+        messages = Messages.objects.filter(room=room).order_by('created_date')
+        serializer = MessagesSerializer(messages, many=True)
+        return Response(serializer.data,status=status.HTTP_200_OK)

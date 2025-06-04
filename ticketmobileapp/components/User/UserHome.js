@@ -8,7 +8,6 @@ import useAuth from "../../Hooks/useAuth";
 const UserHome = ({navigation}) => {
   const [userData] = useAuth();
   const user = userData?._j || null;
-  console.log(user);
   return (
     <>
       {user !== null ? (

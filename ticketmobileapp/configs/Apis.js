@@ -4,14 +4,16 @@ import axios from "axios";
 
 const BASE_URL = "http://192.168.1.112:8000";
 
-
+export const webSocketUrl = `ws://192.168.1.112:8000/ws/chat`
 export const endpoints = {
     "events" : "/events",
     "categories" : "/categories",
     "login":"/o/token/",
     "register":"/users/",
     "current-user":"/users/current-user/",
-    "receipt" :"/receipts"
+    "receipt" :"/receipts",
+    "paypal" :"/paypal",
+    "chat-room" :"/chatroom/room-messages/"
 };
 
 export const authApis = (token) => {
