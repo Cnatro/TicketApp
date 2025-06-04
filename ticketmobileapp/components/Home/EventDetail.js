@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -6,18 +6,25 @@ import {
   Text,
   View,
   Dimensions,
+  TouchableOpacity,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import Apis, { endpoints } from "../../configs/Apis";
 import Spinner from "../Utils/spinner";
-
+import { useNavigation } from "@react-navigation/native";
+import { WebView } from 'react-native-webview';
 const { width } = Dimensions.get("window");
+
 
 const EventDetail = ({ route }) => {
   const { eventId } = route.params;
-  const [eventDetail, setEventDetail] = useState([]);
+  const [eventDetail, setEventDetail] = useState({});
   const [loading, setLoading] = useState(false);
+  const scrollViewRef = useRef(null);
+  const buttonRef = useRef(null);
+  const [showFixedButton, setShowFixedButton] = useState(true);
+  const navigation = useNavigation();
 
   const loadEventDetail = async () => {
     try {
@@ -29,6 +36,21 @@ const EventDetail = ({ route }) => {
       console.error("Lỗi tải chi tiết sự kiện", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleScroll = (event) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+
+    if (buttonRef.current) {
+      buttonRef.current.measure((x, y, width, height, pageX, pageY) => {
+        const windowHeight = Dimensions.get("window").height;
+        if (scrollY + windowHeight >= pageY - 50) {
+          setShowFixedButton(false);
+        } else {
+          setShowFixedButton(true);
+        }
+      });
     }
   };
 
@@ -70,143 +92,254 @@ const EventDetail = ({ route }) => {
   }, []);
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {loading && <Spinner />}
-      <View style={styles.heroContainer}>
-        <Image source={{ uri: eventDetail.image }} style={styles.heroImage} />
-        <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.7)"]}
-          style={styles.heroGradient}
-        />
-        <View style={styles.heroContent}>
-          <Text style={styles.heroTitle}>{eventDetail.name}</Text>
-        </View>
-      </View>
-
-      <View style={styles.contentContainer}>
-        {/* Trạng thái */}
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: getStatusColor(eventDetail.status) },
-          ]}
-        >
-          <Text style={styles.statusText}>
-            {translateStatus(eventDetail.status)}
-          </Text>
+    <>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        {loading && <Spinner />}
+        <View style={styles.heroContainer}>
+          <Image source={{ uri: eventDetail.image }} style={styles.heroImage} />
+          <LinearGradient
+            colors={["transparent", "rgba(0,0,0,0.7)"]}
+            style={styles.heroGradient}
+          />
+          <View style={styles.heroContent}>
+            <Text style={styles.heroTitle}>{eventDetail.name}</Text>
+          </View>
         </View>
 
-        {/* Card thông tin chi tiết */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons
-              name="information-circle-outline"
-              size={20}
-              color="#0EA5E9"
-            />
-            <Text style={styles.cardTitle}>Thông tin chi tiết</Text>
+        <View style={styles.contentContainer}>
+          {/* Trạng thái */}
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: getStatusColor(eventDetail.status) },
+            ]}
+          >
+            <Text style={styles.statusText}>
+              {translateStatus(eventDetail.status)}
+            </Text>
           </View>
 
-          {/* Số vé */}
-          <View style={styles.innerSection}>
-            <View style={styles.innerHeader}>
-              <Ionicons name="people" size={20} color="#8B5CF6" />
-              <Text style={styles.innerTitle}>Số vé: </Text>
-              <Text style={styles.categoryName}>
-                {eventDetail.attendee_count?.toLocaleString("vi-VN")} vé đăng kí
-              </Text>
+          {/* Card thông tin chi tiết */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons
+                name="information-circle-outline"
+                size={20}
+                color="#0EA5E9"
+              />
+              <Text style={styles.cardTitle}>Thông tin chi tiết</Text>
             </View>
-          </View>
 
-          {/* Thời gian */}
-          <View style={styles.innerSection}>
-            <View style={styles.innerHeader}>
-              <Ionicons name="time-outline" size={18} color="#10B981" />
-              <Text style={styles.innerTitle}>Thời gian</Text>
-            </View>
-            <View style={styles.timeContainer}>
-              <View style={styles.timeItem}>
-                <Text style={styles.timeLabel}>Bắt đầu</Text>
-                <Text style={styles.timeValue}>
-                  {new Date(eventDetail.started_date).toLocaleString("vi-VN")}
-                </Text>
-              </View>
-              <View style={styles.timeDivider} />
-              <View style={styles.timeItem}>
-                <Text style={styles.timeLabel}>Kết thúc</Text>
-                <Text style={styles.timeValue}>
-                  {new Date(eventDetail.ended_date).toLocaleString("vi-VN")}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Thể loại */}
-          {eventDetail.category && (
+            {/* Số vé */}
             <View style={styles.innerSection}>
               <View style={styles.innerHeader}>
-                <Ionicons name="pricetag-outline" size={18} color="#F59E0B" />
-                <Text style={styles.innerTitle}>Thể loại: </Text>
+                <Ionicons name="people" size={20} color="#8B5CF6" />
+                <Text style={styles.innerTitle}>Số vé: </Text>
                 <Text style={styles.categoryName}>
-                  {eventDetail.category.name}
+                  {eventDetail.attendee_count?.toLocaleString("vi-VN")} vé đăng
+                  kí
                 </Text>
               </View>
             </View>
-          )}
 
-          {/* Địa điểm */}
-          {eventDetail.venue && (
+            {/* Thời gian */}
             <View style={styles.innerSection}>
               <View style={styles.innerHeader}>
-                <Ionicons name="location-outline" size={18} color="#EF4444" />
-                <Text style={styles.innerTitle}>Địa điểm: </Text>
+                <Ionicons name="time-outline" size={18} color="#10B981" />
+                <Text style={styles.innerTitle}>Thời gian</Text>
               </View>
-              <View style={styles.venueRow}>
-                <Text style={styles.venueName}>{eventDetail.venue.name}, </Text>
-                <Text style={styles.venueAddress}>
-                  {eventDetail.venue.address}
-                </Text>
-              </View>
-              {eventDetail.venue.img_seat && (
-                <Image
-                  source={{ uri: eventDetail.venue.img_seat }}
-                  style={styles.venueImage}
-                />
-              )}
-            </View>
-          )}
-          {eventDetail.performances && eventDetail.performances.length > 0 && (
-            <View>
-              <View style={styles.cardHeader}>
-                <Ionicons name="list-outline" size={20} color="#3B82F6" />
-                <Text style={styles.cardTitle}>Chương trình sự kiện</Text>
-              </View>
-              {eventDetail.performances.map((item) => (
-                <View key={item.id} style={styles.performanceItem}>
-                  {/* <Ionicons name="calendar-outline" size={20} color="#3B82F6" /> */}
-                  <Text style={styles.performanceName}>- {item.name}</Text>
-                  <Text style={styles.performanceTime}>
-                    {new Date(item.started_date).toLocaleString("vi-VN", {
-                      hour12: false,
-                    })}{" "}
-                    -{" "}
-                    {new Date(item.ended_date).toLocaleString("vi-VN", {
-                      hour12: false,
-                    })}
+              <View style={styles.timeContainer}>
+                <View style={styles.timeItem}>
+                  <Text style={styles.timeLabel}>Bắt đầu</Text>
+                  <Text style={styles.timeValue}>
+                    {new Date(eventDetail.started_date).toLocaleString("vi-VN")}
                   </Text>
                 </View>
-              ))}
+                <View style={styles.timeDivider} />
+                <View style={styles.timeItem}>
+                  <Text style={styles.timeLabel}>Kết thúc</Text>
+                  <Text style={styles.timeValue}>
+                    {new Date(eventDetail.ended_date).toLocaleString("vi-VN")}
+                  </Text>
+                </View>
+              </View>
             </View>
-          )}
-          {/* Mô tả */}
-          <View style={styles.cardHeader}>
-            <Ionicons name="document-text-outline" size={20} color="#6366F1" />
-            <Text style={styles.cardTitle}>Mô tả</Text>
+
+            {/* Thể loại */}
+            {eventDetail.category && (
+              <View style={styles.innerSection}>
+                <View style={styles.innerHeader}>
+                  <Ionicons name="pricetag-outline" size={18} color="#F59E0B" />
+                  <Text style={styles.innerTitle}>Thể loại: </Text>
+                  <Text style={styles.categoryName}>
+                    {eventDetail.category.name}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Địa điểm */}
+            {eventDetail.venue && (
+              <View style={styles.innerSection}>
+                <View style={styles.innerHeader}>
+                  <Ionicons name="location-outline" size={18} color="#EF4444" />
+                  <Text style={styles.innerTitle}>Địa điểm: </Text>
+                </View>
+                <View style={styles.venueRow}>
+                  <Text style={styles.venueName}>
+                    {eventDetail.venue.name},{" "}
+                  </Text>
+                  <Text style={styles.venueAddress}>
+                    {eventDetail.venue.address}
+                  </Text>
+                </View>
+                {/* Bản đồ */}
+                {eventDetail.venue.latitude && eventDetail.venue.longitude ? (
+                  <View style={{ height: 300, borderRadius: 10, overflow: 'hidden', marginTop: 10 }}>
+                    <WebView
+                      source={{
+                        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>html, body, #map { height: 100%; margin: 0; padding: 0; }</style>
+            <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+            <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+          </head>
+          <body>
+            <div id="map"></div>
+            <script>
+              var map = L.map('map').setView([${eventDetail.venue.latitude}, ${eventDetail.venue.longitude}], 14);
+              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+              }).addTo(map);
+              L.marker([${eventDetail.venue.latitude}, ${eventDetail.venue.longitude}])
+                .addTo(map)
+                .bindPopup('${eventDetail.venue.name}')
+                .openPopup();
+            </script>
+          </body>
+          </html>
+        `
+                      }}
+                      originWhitelist={['*']}
+                      javaScriptEnabled={true}
+                      domStorageEnabled={true}
+                    />
+                  </View>
+                ) : (
+                  <Text style={styles.warningText}>Không có tọa độ cho địa điểm này</Text>
+                )}
+                <View>
+                  {eventDetail.ticket_types && eventDetail.ticket_types.length > 0 && (
+                    <>
+                      <View style={styles.cardHeader}>
+                        <Ionicons
+                          name="cash-outline"
+                          size={20}
+                          color="#10B981"
+                        />
+                        <Text style={styles.cardTitle}>Giá vé</Text>
+                      </View>
+                      <View style={styles.ticketList}>
+                        {eventDetail.ticket_types.map((item) => (
+                          <View key={item.id} style={styles.ticketItem}>
+                            <Text style={styles.ticketName}>
+                              + Vé {item.name}
+                            </Text>
+                            <Text style={styles.ticketPrice}>
+                              {Number(item.price).toLocaleString("vi-VN", {
+                                minimumFractionDigits: 2,
+                              })}{" "}
+                              VNĐ
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </>
+                  )}
+                  <Text style={[{ paddingTop: "10px" }, styles.venueName]}>
+                    Sơ đồ chỗ ngồi:{" "}
+                  </Text>
+                  {eventDetail.venue.img_seat && (
+                    <Image
+                      source={{ uri: eventDetail.venue.img_seat }}
+                      style={styles.venueImage}
+                    />
+                  )}
+                </View>
+              </View>
+            )}
+
+            {/* Chương trình sự kiện */}
+            {eventDetail.performances &&
+              eventDetail.performances.length > 0 && (
+                <View>
+                  <View style={styles.cardHeader}>
+                    <Ionicons name="list-outline" size={20} color="#3B82F6" />
+                    <Text style={styles.cardTitle}>Chương trình sự kiện</Text>
+                  </View>
+                  {eventDetail.performances.map((item) => (
+                    <View key={item.id} style={styles.performanceItem}>
+                      {/* <Ionicons name="calendar-outline" size={20} color="#3B82F6" /> */}
+                      <Text style={styles.performanceName}>- {item.name}</Text>
+                      <Text style={styles.performanceTime}>
+                        {new Date(item.started_date).toLocaleString("vi-VN", {
+                          hour12: false,
+                        })}{" "}
+                        -{" "}
+                        {new Date(item.ended_date).toLocaleString("vi-VN", {
+                          hour12: false,
+                        })}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            {/* Mô tả */}
+            <View style={styles.cardHeader}>
+              <Ionicons
+                name="document-text-outline"
+                size={20}
+                color="#6366F1"
+              />
+              <Text style={styles.cardTitle}>Mô tả</Text>
+            </View>
+            <Text style={styles.description}>{eventDetail.description}</Text>
           </View>
-          <Text style={styles.description}>{eventDetail.description}</Text>
+          <View ref={buttonRef} style={{ marginTop: 20, alignItems: "center" }}>
+            <TouchableOpacity
+              style={styles.realBuyButton}
+              onPress={() =>
+                navigation.navigate("Ticket", { eventId: eventId })
+              }
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                Mua hàng
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+      {showFixedButton && (
+        <View style={styles.fixedBuyButton}>
+          <TouchableOpacity
+            style={styles.realBuyButton}
+            onPress={() => navigation.navigate("Ticket", { eventId: eventId })}
+          >
+            <Text style={{ color: "#fff", fontWeight: "bold" }}>Mua hàng</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </>
   );
 };
 
@@ -375,6 +508,75 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6B7280",
     marginTop: 2,
+  },
+  ticketList: {
+    marginBottom: 16,
+    marginLeft: 10,
+  },
+  ticketItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  ticketName: {
+    fontSize: 16,
+    color: "#374151",
+    fontWeight: "600",
+  },
+  ticketPrice: {
+    fontSize: 16,
+    color: "#10B981",
+    fontWeight: "700",
+  },
+  fixedBuyButton: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 1000,
+    backgroundColor: "#fff",
+    paddingVertical: 10,
+  },
+  realBuyButton: {
+    backgroundColor: "#F59E0B",
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+  },
+  mapContainer: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 14,
+    marginBottom: 14,
+  },
+  map: {
+    flex: 1,
+  },
+  calloutContainer: {
+    width: 150,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+  },
+  calloutTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  calloutDescription: {
+    fontSize: 12,
+    color: '#666',
+  },
+  warningText: {
+    fontSize: 14,
+    color: '#EF4444',
+    marginTop: 10,
+    marginLeft: 26,
   },
 });
 
