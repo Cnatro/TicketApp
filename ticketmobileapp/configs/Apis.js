@@ -1,15 +1,16 @@
 // import { BASE_URL } from '@env';
 import axios from "axios";
 
-
 const BASE_URL = "http://192.168.20.114:8000";
-
 
 export const endpoints = {
     "events": "/events",
     "categories": "/categories",
     "login": "/o/token/",
-    "current-user": "/users/current-user/"
+    "register": "/users/",
+    "current-user": "/users/current-user/",
+    "receipt": "/receipts"
+
 };
 
 export const authApis = (token) => {
