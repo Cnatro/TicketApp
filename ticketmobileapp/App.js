@@ -14,11 +14,15 @@ import useAuth from "./Hooks/useAuth";
 import Register from "./components/User/Register";
 import Ticket from "./components/Home/Ticket";
 import Receipted from "./components/Home/Receipted";
+import PayPal from "./components/Payment/PayPal";
+import ChatBox from "./components/Home/ChatBox";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const HomeStack = () => {
+  const [userData] = useAuth();
+  const user = userData?._j || null;
   return (
     <Stack.Navigator>
       <Stack.Screen
@@ -39,6 +43,16 @@ const HomeStack = () => {
         name="Ticket"
         component={Ticket}
         options={{ title: "Đặt vé" }}
+      />
+      <Stack.Screen
+        name="PayPal"
+        component={PayPal}
+        options={{ title: "Thanh toán" }}
+      />
+      <Stack.Screen
+        name="ChatBox"
+        component={ChatBox}
+        options={{ title: "Tin nhắn" }}
       />
     </Stack.Navigator>
   );

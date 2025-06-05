@@ -1,3 +1,9 @@
+from email.mime.image import MIMEImage
+
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils import timezone
+
 from django.template.defaulttags import querystring
 from django.views.generic import detail
 from rest_framework.response import Response
@@ -6,7 +12,10 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 
 from .models import User, Category, Venue, Event, Performance, Ticket_Type, Ticket, Receipt, Comment, Review, Messages, \
-    Notification
+    Notification, ChatRoom
+from tickets.paypal_configs import paypalrestsdk
+from .serializers import MessagesSerializer
+from .utils import  generate_qr_bytes
 from tickets import serializers, paginators
 from tickets.serializers import UserSerializer, CategorySerializer, TicketTypeSerializer,ReceiptCreateSerializer,ReceiptSerializer,\
     ReceiptHistorySerializer
@@ -28,8 +37,6 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
                     u.set_password(v)
             u.save()
         return Response(serializers.UserSerializer(u).data)
-
-
 
 
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -68,7 +75,8 @@ class VenueViewSet(viewsets.ViewSet, generics.ListAPIView):
 
 
 class EventViewSet(viewsets.ViewSet, generics.ListAPIView):
-    queryset = Event.objects.filter(active=True).order_by('started_date')
+    current_day = timezone.now()
+    queryset = Event.objects.filter(active=True, ended_date__gt=current_day).order_by('started_date')
     serializer_class = serializers.EventListSerializer
     pagination_class = paginators.EventPagination
 
@@ -84,7 +92,8 @@ class EventViewSet(viewsets.ViewSet, generics.ListAPIView):
         try:
             event = self.get_queryset().get(pk=pk)
         except Event.DoesNotExist:
-            return Response({'error': 'Event not found'}, status=404)
+            return Response({'error':
+                                 'Event not found'}, status=404)
         serializer = serializers.EventDetailSerializer(event, context={'request': request})
         return Response(serializer.data)
 
@@ -119,7 +128,10 @@ class ReceiptViewSet(viewsets.ViewSet, generics.CreateAPIView):
     @action(methods=['get'], detail=False, url_path='latest')
     def get_latest_receipt(self, request):
         user = request.user
-        latest_receipt = Receipt.objects.filter(user=user).order_by('-created_date').first()
+        now = timezone.now()
+        latest_receipt = Receipt.objects.filter(
+            user=user,
+            tickets__ticket_type__event__ended_date__gt=now).order_by('-created_date').first()
         if not latest_receipt:
             return Response({'message': 'Chưa có hóa đơn nào'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -135,3 +147,124 @@ class ReceiptViewSet(viewsets.ViewSet, generics.CreateAPIView):
 
 
 
+
+class PayPalViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    @action(methods=["post"], detail=False, url_path="create-payment")
+    def create_payment(self, request):
+
+        total = request.data.get("total", "10.00")
+        currency = "USD"
+        return_url = request.data.get("return_url")
+        cancel_url = request.data.get("cancel_url")
+
+        payment = paypalrestsdk.Payment({
+            "intent": "sale",  # trả ngay khi bấm đồng ý
+            "payer": {"payment_method": "paypal"},
+            "redirect_urls": {
+                "return_url": return_url,
+                "cancel_url": cancel_url,
+            },
+            "transactions": [{
+                "amount": {
+                    "total": total,
+                    "currency": currency,
+                },
+                "description": "ZiveGO Ticket Payment"
+            }]
+        })
+
+        if payment.create():
+            for link in payment.links:
+                if link.rel == "approval_url":
+                    return Response({
+                        "approval_url": link.href,
+                        "payment_id": payment.id,
+                    })
+        else:
+            return Response({"error": payment.error}, status=400)
+
+    @action(detail=False, methods=["post"], url_path="execute-payment")
+    def execute(self, request):
+        payment_id = request.data.get("payment_id")
+        payer_id = request.data.get("payer_id")
+
+        payment = paypalrestsdk.Payment.find(payment_id)
+        if payment.execute({"payer_id": payer_id}):
+            return Response({"status": "success", "payment": payment.to_dict()})
+        else:
+            return Response({"error": payment.error}, status=400)
+
+
+
+class ChatRoomViewSet(viewsets.ViewSet, generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+
+    @action(methods=['get'], detail=False, url_path="room-messages")
+    def get_my_room_messages(self, request):
+        user = request.user
+        try:
+            room = ChatRoom.objects.get(customer=user)
+        except ChatRoom.DoesNotExist:
+            return Response({"detail": "User chưa có phòng chat"}, status=status.HTTP_404_NOT_FOUND)
+
+        messages = Messages.objects.filter(room=room).order_by('created_date')
+        serializer = MessagesSerializer(messages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class EmailViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    @action(methods=["post"], detail=False, url_path="send")
+    def send_email(self, request):
+        user = request.user
+
+        email_to = request.data.get("email",user.email)
+        message = request.data.get("message", "Nội dung trống")
+        subject = request.data.get("subject", "Thông báo từ hệ thống")
+
+        if not email_to:
+            Response({"error": "Tài khoản không có Email"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+
+            tickets = message.get("tickets", [])
+            attachments = []
+
+            for i, ticket in enumerate(tickets):
+                qr_data = ticket.get("code_qr", "")
+                qr_bytes = generate_qr_bytes(qr_data)
+                cid = f"qr{i}"
+                ticket["qr_cid"] = cid
+
+                attachments.append({
+                    "cid": cid,
+                    "bytes": qr_bytes
+                })
+
+            message["tickets"] = tickets
+
+
+            html_content_email = render_to_string("email_template.html",message)
+
+            email  = EmailMultiAlternatives(
+                subject=subject,
+                body="Đây là xác nhận đặt vé của bạn.",
+                from_email=None,
+                to=[email_to]
+            )
+            email.attach_alternative(html_content_email,"text/html")
+            # Gắn QR code ảnh theo cid
+            for att in attachments:
+                image = MIMEImage(att["bytes"])
+                image.add_header("Content-ID", f"<{att['cid']}>")
+                image.add_header("Content-Disposition", "inline", filename=f"{att['cid']}.png")
+                email.attach(image)
+
+            email.send()
+            return Response({"message": f"Đã gửi email tới {email_to}"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

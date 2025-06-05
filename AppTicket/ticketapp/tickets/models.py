@@ -186,6 +186,7 @@ class Ticket(BasicModel):
 
     def generate_qr_code(self):
         return (
+            f"ID: RC:{self.receipt.id}||TT:{self.ticket_type.id}\n"
             f"USER: {self.receipt.user.username}\n"
             f"EVENT: {self.ticket_type.event.name}\n"
             f"TIME: {self.ticket_type.event.started_date} - {self.ticket_type.event.ended_date}\n"
@@ -228,15 +229,25 @@ class Review(Interaction):
         unique_together = ('event', 'user')
 
 
+class ChatRoom(BasicModel):
+    name = models.CharField(max_length=255, unique=True)
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customer_rooms')
+    staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='staff_rooms')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Room {self.name} (Customer: {self.customer.username}, Staff: {self.staff.username})"
+
+
 class Messages(BasicModel):
     content = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)
 
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="messages")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name="messages",null=True)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
 
     def __str__(self):
-        return f"Message from {self.user.username} at {self.sent_at}"
+        return f"Message from {self.sender.username} at {self.sent_at}"
 
 
 class Notification(BasicModel):

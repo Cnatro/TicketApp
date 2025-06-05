@@ -81,6 +81,11 @@ const Ticket = ({ route }) => {
 
       if (res.status === 201) {
         alert("Thanh toán thành công !!");
+        await authApis(token).post(endpoints["send-email"], {
+          email: "cnatro23@gmail.com", // chỉnh email đăng nhập
+          subject: "Thông báo",
+          message: data,
+        });
         navigation.navigate("HomeStack", { screen: "Home" });
       }
     } catch (error) {
@@ -146,7 +151,15 @@ const Ticket = ({ route }) => {
                 VNĐ
               </Text>
             </View>
-            <TouchableOpacity style={styles.checkoutButton} onPress={onReceipt}>
+            <TouchableOpacity
+              style={styles.checkoutButton}
+              onPress={() =>
+                navigation.navigate("PayPal", {
+                  totalPrice: totalPrice,
+                  onReceipt: onReceipt,
+                })
+              }
+            >
               <Text style={styles.checkoutButtonText}>Thanh toán</Text>
             </TouchableOpacity>
           </ScrollView>

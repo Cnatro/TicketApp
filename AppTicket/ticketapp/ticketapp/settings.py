@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'debug_toolbar',
     'oauth2_provider',
     'django_elasticsearch_dsl',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -181,6 +182,19 @@ JAZZMIN_SETTINGS = {
         # model admin to link to (Permissions checked against model)
         {"model": "auth.User"},
 
+        {
+            "name": "Nhắn tin",
+            "url": "/admin/chat/",
+            "new_window": False,
+            "icon": "fas fa-comments"
+        },
+
+        {
+            "name": "Check vé",
+            "url": "/admin/verify-ticket/",
+            "new_window": False,
+            "icon": "fas fa-comments"
+        },
         # App with dropdown menu to all its models pages (Permissions checked against models)
         # {"app": "tickets"},
     ],
@@ -267,6 +281,15 @@ JAZZMIN_SETTINGS = {
     # Add a language dropdown into the admin
     "language_chooser": False,
 }
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],  # Redis chạy local
+        },
+    },
+}
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -292,7 +315,26 @@ AUTH_USER_MODEL = "tickets.User"
 LOGIN_REDIRECT_URL = '/admin/'
 INTERNAL_IPS = ['127.0.0.1']
 ALLOWED_GROUPS = ["ROLE_ADMIN", "ROLE_STAFF", "ROLE_EVENT_ORIGANEZE"]
-OAUTH2_PROVIDER = {'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore'}
 
+# Oauth2
+OAUTH2_PROVIDER = {'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore'}
 CLIENT_ID = '6OYmJrNXua1Qs7FyIr0CnJ9nC1u48nW6bMQ3diAT'
 CLIENT_SECRET = '7wITsQVtUX9klLPqzfIWpnmcI1qBkkDGG7g3zVj3SAojbn9eF3ui6DKc3SJ46gHpf0Ul860jsbt5pCcvV14QXp73YurggsXEFZBzD1FIMukLluXQ3YcwrGT4t5wPi2IE'
+
+# PayPal
+PAYPAL_MODE = 'sandbox'
+PAYPAL_CLIENT_ID = 'AWhhe0H9QKQ5e9TYuSE9G_p7ZCzdlXOn3ixRI2m0guB2qoSLzVxxFD4UWoSgY1p78gGav10JNQJh-1U2'
+PAYPAL_CLIENT_SECRET = 'EDA1Sgj2_uF7LWH8pQEfJfkI9aBzKkM631PRR5qZ2Rp_WLfj0KFnBDXxnF7p2pZ4enLfEvqZddRaxywQ'
+
+# Websocket
+ASGI_APPLICATION = 'ticketapp.asgi.application'
+
+#Email
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'cnatrocode@gmail.com'
+EMAIL_HOST_PASSWORD = 'agsr xdix uqbg qshl'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
