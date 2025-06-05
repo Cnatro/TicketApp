@@ -321,3 +321,13 @@ PAYPAL_CLIENT_SECRET = 'EDA1Sgj2_uF7LWH8pQEfJfkI9aBzKkM631PRR5qZ2Rp_WLfj0KFnBDXx
 
 # Websocket
 ASGI_APPLICATION = 'ticketapp.asgi.application'
+
+#Email
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'cnatrocode@gmail.com'
+EMAIL_HOST_PASSWORD = 'agsr xdix uqbg qshl'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+

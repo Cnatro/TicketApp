@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Xác nhận đặt vé</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .qr-img {
+            width: 130px;
+            height: 130px;
+        }
+        .ticket-card {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body class="bg-light py-4">
+    <div class="container bg-white shadow p-4 rounded">
+        <h4 class="text-primary fw-bold mb-3">XÁC NHẬN ĐẶT VÉ THÀNH CÔNG</h4>
+
+        <p><strong>Mã đặt vé:</strong> RC:{{ id }}</p>
+        <p><strong>Phương thức thanh toán:</strong> {{ payment_method }}</p>
+        <p><strong>Tổng số lượng vé:</strong> {{ total_quantity }}</p>
+        <p><strong>Tổng tiền:</strong> {{ total_price|floatformat:"0" }} VNĐ</p>
+
+        <hr>
+
+<!--        <h5 class="mt-4 mb-3">Chi tiết vé:</h5>-->
+
+<!--        {% for ticket in tickets %}-->
+<!--        <div class="ticket-card row">-->
+<!--            <div class="col-md-8">-->
+<!--                <p><strong>Sự kiện:</strong> {{ ticket.event_name }}</p>-->
+<!--                <p><strong>Trạng thái check-in:</strong>-->
+<!--                    {% if ticket.is_checked_in %}-->
+<!--                        <span class="text-success">Đã check-in</span>-->
+<!--                    {% else %}-->
+<!--                        <span class="text-danger">Chưa check-in</span>-->
+<!--                    {% endif %}-->
+<!--                </p>-->
+<!--            </div>-->
+<!--&lt;!&ndash;            <div class="col-md-4 text-center">&ndash;&gt;-->
+<!--&lt;!&ndash;                 <img src="data:image/png;base64,{{ ticket.qr_base64 }}" style="width:250px; height:250px;" />&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;                <img class="qr-img" src="data:image/png;base64,{{ ticket.qr_base64 }}" alt="QR Code">&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;            </div>&ndash;&gt;-->
+<!--        </div>-->
+<!--        {% endfor %}-->
+    </div>
+</body>
+</html>

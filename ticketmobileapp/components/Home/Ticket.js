@@ -81,6 +81,11 @@ const Ticket = ({ route }) => {
 
       if (res.status === 201) {
         alert("Thanh toán thành công !!");
+        await authApis(token).post(endpoints["send-email"], {
+          email: "cnatro23@gmail.com", // chỉnh email đăng nhập
+          subject: "Thông báo",
+          message: data,
+        });
         navigation.navigate("HomeStack", { screen: "Home" });
       }
     } catch (error) {

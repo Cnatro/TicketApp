@@ -1,10 +1,9 @@
-from idlelib.rpc import request_queue
-
 from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import Group, Permission
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
+from django.template.response import TemplateResponse
 from django.utils.html import format_html
 from django.urls import reverse, path
 from rest_framework.decorators import api_view
@@ -18,6 +17,8 @@ from io import BytesIO
 from django.db.models import Avg
 from ticketapp.settings import ALLOWED_GROUPS
 from django.contrib.auth.hashers import make_password
+
+from .statistical import get_revenue_ticket, get_interest_event
 
 
 class TicketAppAdminSite(admin.AdminSite):
@@ -37,6 +38,22 @@ class TicketAppAdminSite(admin.AdminSite):
             path('api/verify-ticket/', verify_ticket, name='verify_ticket'),
         ]
         return custom_urls + urls
+
+    def index(self, request, extra_context=None):
+        event_ends = Event.objects.filter(
+            ended_date__lt=timezone.now(),
+            ticket_types__tickets__receipt__is_paid=True
+        ).distinct()
+
+        revenue_data = get_revenue_ticket(request)
+        interest_data = get_interest_event(request)
+        context = {
+            **self.each_context(request),
+            "event_ends":event_ends,
+            "revenue_data":revenue_data,
+            "interest_data":interest_data
+        }
+        return TemplateResponse(request, "admin/custom_index.html", context)
 
 
 class BaseModelAdmin(admin.ModelAdmin):
@@ -177,7 +194,7 @@ class TicketTypeModelAdmin(BaseModelAdmin):
 
 
 class TicketModelAdmin(BaseModelAdmin):
-    list_display = ['id', 'event_name', 'ticket_type', 'qr_code', 'receipt', 'actions_link']
+    list_display = ['id', 'event_name', 'ticket_type', 'qr_code', 'receipt','quantity', 'actions_link']
     list_filter = ['ticket_type', 'receipt__id']
     list_select_related = ['receipt']
     list_per_page = 5

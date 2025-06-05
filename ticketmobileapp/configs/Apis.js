@@ -13,7 +13,8 @@ export const endpoints = {
     "current-user":"/users/current-user/",
     "receipt" :"/receipts",
     "paypal" :"/paypal",
-    "chat-room" :"/chatroom/room-messages/"
+    "chat-room" :"/chatroom/room-messages/",
+    "send-email" :"/email/send/"
 };
 
 export const authApis = (token) => {
