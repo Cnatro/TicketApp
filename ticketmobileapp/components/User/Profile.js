@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -12,8 +12,10 @@ import { Divider, IconButton, ProgressBar } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import useAuth from "../../Hooks/useAuth";
 import { useNavigation } from "@react-navigation/native";
+import ReceiptHistory from "../Home/ReceiptHistory";
 
 const Profile = () => {
+  const [activeTab, setActiveTab] = useState("info");
   const [userData, auth] = useAuth();
   const navigation = useNavigation()
   const progress = 180 / 10000;
@@ -24,7 +26,7 @@ const Profile = () => {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerText}>THÀNH VIÊN</Text>
-          <IconButton icon="cog" size={24} onPress={() => {}} />
+          <IconButton icon="cog" size={24} onPress={() => { }} />
         </View>
 
         {/* Avatar + Info */}
@@ -45,53 +47,67 @@ const Profile = () => {
         </View>
         {/* Tabs (mô phỏng) */}
         <View style={styles.tabs}>
-          <Text style={[styles.tabItem, styles.activeTab]}>Thông tin</Text>
-          <Text style={styles.tabItem}>Giao dịch</Text>
+          <TouchableOpacity onPress={() => setActiveTab("info")}>
+            <Text style={[styles.tabItem, activeTab === "info" && styles.activeTab]}>
+              Thông tin
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setActiveTab("receipt")}>
+            <Text style={[styles.tabItem, activeTab === "receipt" && styles.activeTab]}>
+              Giao dịch
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Progress bar */}
-        <View style={styles.progressSection}>
-          <Text style={styles.levelLabel}>Cấp độ thành viên</Text>
-          <View style={styles.levelText}>
-            <Text style={styles.rank}>C'Friends</Text>
-            <Text style={styles.rank}>C'VIP</Text>
-          </View>
-          <ProgressBar
-            progress={progress}
-            color="#8e24aa"
-            style={styles.progressBar}
-          />
-          <View style={styles.progressRange}>
-            <Text>0</Text>
-            <Text>10,000</Text>
-          </View>
-        </View>
+        {activeTab === "info" ? (
+          <>
+            <View style={styles.progressSection}>
+              <Text style={styles.levelLabel}>Cấp độ thành viên</Text>
+              <View style={styles.levelText}>
+                <Text style={styles.rank}>C'Friends</Text>
+                <Text style={styles.rank}>C'VIP</Text>
+              </View>
+              <ProgressBar
+                progress={progress}
+                color="#8e24aa"
+                style={styles.progressBar}
+              />
+              <View style={styles.progressRange}>
+                <Text>0</Text>
+                <Text>10,000</Text>
+              </View>
+            </View>
 
-        <Divider />
+            <Divider />
 
-        <MenuItem label="Thông tin cá nhân" />
-        <MenuItem label="Đổi mật khẩu" />
-        <MenuItem label="Vé đã mua" onNavigator={()=>navigation.navigate("Receipted")}/>
-        <MenuItem label="Hỏi đáp" />
+            <MenuItem label="Thông tin cá nhân" />
+            <MenuItem label="Đổi mật khẩu" />
+            <MenuItem label="Vé đã mua" onNavigator={() => navigation.navigate("Receipted")} />
+            <MenuItem label="Hỏi đáp" />
+            <View style={styles.hotline}>
+              <Text style={styles.hotlineLabel}>Hotline:</Text>
+              <Text style={styles.hotlineNumber}>028 7300 8881</Text>
+            </View>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.logoutButton}
+                onPress={() => auth.logout()}
+              >
+                <Text style={styles.logoutText}>Đăng xuất</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <ReceiptHistory />
+        )}
 
-        <View style={styles.hotline}>
-          <Text style={styles.hotlineLabel}>Hotline:</Text>
-          <Text style={styles.hotlineNumber}>028 7300 8881</Text>
-        </View>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={() => auth.logout()}
-          >
-            <Text style={styles.logoutText}>Đăng xuất</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-const MenuItem = ({ label,onNavigator }) => (
+const MenuItem = ({ label, onNavigator }) => (
   <TouchableOpacity style={styles.menuItem} onPress={onNavigator}>
     <Text style={styles.menuText}>{label}</Text>
     <Icon name="keyboard-arrow-right" size={24} color="#999" />
@@ -175,7 +191,7 @@ const styles = StyleSheet.create({
   hotlineLabel: { fontWeight: "bold", marginRight: 4 },
   hotlineNumber: { color: "#03a9f4" },
   buttonContainer: {
-    alignItems: "center", 
+    alignItems: "center",
     marginVertical: 24,
   },
   logoutButton: {
@@ -183,8 +199,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 60,
     borderRadius: 30,
-    elevation: 3, 
-    shadowColor: "#000", 
+    elevation: 3,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,

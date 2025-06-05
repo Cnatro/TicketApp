@@ -1,5 +1,3 @@
-
-
 from django.template.defaulttags import querystring
 from django.views.generic import detail
 from rest_framework.response import Response
@@ -9,8 +7,9 @@ from rest_framework.permissions import IsAuthenticated
 
 from .models import User, Category, Venue, Event, Performance, Ticket_Type, Ticket, Receipt, Comment, Review, Messages, \
     Notification
-from tickets import serializers
-from tickets.serializers import UserSerializer, CategorySerializer, TicketTypeSerializer,ReceiptCreateSerializer,ReceiptSerializer
+from tickets import serializers, paginators
+from tickets.serializers import UserSerializer, CategorySerializer, TicketTypeSerializer,ReceiptCreateSerializer,ReceiptSerializer,\
+    ReceiptHistorySerializer
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
@@ -29,6 +28,8 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
                     u.set_password(v)
             u.save()
         return Response(serializers.UserSerializer(u).data)
+
+
 
 
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -69,6 +70,15 @@ class VenueViewSet(viewsets.ViewSet, generics.ListAPIView):
 class EventViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Event.objects.filter(active=True).order_by('started_date')
     serializer_class = serializers.EventListSerializer
+    pagination_class = paginators.EventPagination
+
+    def get_queryset(self):
+        queryset = self.queryset
+
+        q = self.request.query_params.get('q')
+        if q:
+            queryset = queryset.filter(name__icontains=q)
+        return queryset
 
     def retrieve(self, request, pk=None):
         try:
@@ -112,6 +122,15 @@ class ReceiptViewSet(viewsets.ViewSet, generics.CreateAPIView):
         latest_receipt = Receipt.objects.filter(user=user).order_by('-created_date').first()
         if not latest_receipt:
             return Response({'message': 'Chưa có hóa đơn nào'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(methods=['get'], detail=False, url_path="receipt-history")
+    def get_history_receipt(self, request):
+        user = request.user
+        history_receipt = Receipt.objects.filter(user=user).order_by('-created_date')
+        if not history_receipt:
+            return Response({'message': 'Chưa có hóa đơn nào'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = serializers.ReceiptHistorySerializer(history_receipt, many=True)
+        return Response(serializer.data)
 
 
 

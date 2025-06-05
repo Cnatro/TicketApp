@@ -213,3 +213,30 @@ class ReceiptSerializer(serializers.ModelSerializer):
         model = Receipt
         fields = ["id", "payment_method", "total_quantity", "total_price", "tickets"]
 
+
+class ReceiptHistorySerializer(serializers.ModelSerializer):
+    event_name = serializers.SerializerMethodField()
+    venue_name = serializers.SerializerMethodField()
+    venue_address = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Receipt
+        fields = ["id", "event_name", "venue_name", "venue_address", "total_price"]
+
+    def get_event_name(self, receipt):
+        first_ticket = receipt.tickets.first()
+        if first_ticket:
+            return first_ticket.ticket_type.event.name
+        return None
+
+    def get_venue_name(self, receipt):
+        first_ticket = receipt.tickets.first()
+        if first_ticket:
+            return first_ticket.ticket_type.event.venue.name
+        return None
+
+    def get_venue_address(self, receipt):
+        first_ticket = receipt.tickets.first()
+        if first_ticket:
+            return first_ticket.ticket_type.event.venue.address
+        return None
