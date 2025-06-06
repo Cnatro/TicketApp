@@ -98,19 +98,17 @@ const ChatBox = () => {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 80} // tăng offset
+      behavior={Platform.OS === "ios" ? "padding" : "padding"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
     >
-      {loading && <Spinner />}
-
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={{ flex: 1 }}>
+        <View style={styles.container}>
+          {loading && <Spinner />}
+
           <ScrollView
             ref={scrollViewRef}
             contentContainerStyle={styles.chatContainer}
             keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            showsVerticalScrollIndicator={false}
             onContentSizeChange={() =>
               scrollViewRef.current.scrollToEnd({ animated: true })
             }
