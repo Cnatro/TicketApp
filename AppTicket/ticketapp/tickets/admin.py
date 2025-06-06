@@ -6,8 +6,9 @@ from django.shortcuts import render
 from django.template.response import TemplateResponse
 from django.utils.html import format_html
 from django.urls import reverse, path
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import get_object_or_404
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import *
@@ -212,6 +213,13 @@ class TicketTypeModelAdmin(BaseModelAdmin):
     list_display_links = ['name']
     list_per_page = 5
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "event":
+            now = timezone.now()
+            kwargs["queryset"] = Event.objects.filter(started_date__gt=now)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
     def format_price(self, obj):
         return f"{obj.price:,.0f} VNĐ".replace(",", ".")
 
@@ -273,7 +281,7 @@ class PerformanceModelAdmin(BaseModelAdmin):
 
 
 class ReceiptModelAdmin(BaseModelAdmin):
-    list_display = ['id', 'user', 'payment_method', 'is_paid', 'total_quantity', 'format_total_price', 'actions_link']
+    list_display = ['id', 'user', 'payment_method', 'is_paid', 'total_quantity', 'format_total_price','created_date', 'actions_link']
     list_per_page = 5
     search_fields = ['user']
     list_filter = ['is_paid']
@@ -329,6 +337,7 @@ def admin_chat_view(request):
 
 
 @staff_member_required
+@permission_classes([IsAuthenticated])
 def verify_ticket_page(request):
     return render(request, 'admin/verify_ticket.html')
 

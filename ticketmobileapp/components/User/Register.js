@@ -22,6 +22,7 @@ const Register = () => {
   const [role, setRole] = useState(1);
   const [user, setUser] = useState({});
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const personalInfo = [
     { label: "Họ tên", field: "full_name", placeholder: "Họ và tên của bạn" },
@@ -44,6 +45,32 @@ const Register = () => {
       secureTextEntry: true,
     },
   ];
+
+  const validateFields = () => {
+    const requiredFields = [
+      "full_name",
+      "phone",
+      "email",
+      "username",
+      "password",
+      "confirm",
+    ];
+
+    let newErrors = {};
+    requiredFields.forEach((field) => {
+      if (!user[field] || user[field].trim() === "") {
+        newErrors[field] = "Trường này không được để trống!";
+      }
+    });
+
+    if (user.password !== user.confirm) {
+      newErrors["confirm"] = "Mật khẩu nhập lại không khớp!";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const setState = (value, field) => {
     setUser({ ...user, [field]: value });
   };
@@ -67,6 +94,8 @@ const Register = () => {
   };
 
   const registerUser = async () => {
+    if (!validateFields()) return;
+
     const { first_name, last_name } = splitFullName(user.full_name);
     const userReal = {
       ...user,
@@ -123,7 +152,10 @@ const Register = () => {
       style={{ flex: 1 }}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView contentContainerStyle={styles.container}  keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
           {loading && <Spinner />}
           <Text style={styles.title}>Đăng ký</Text>
           <Text style={styles.subtitle}>Đăng ký tài khoản thành viên</Text>
@@ -137,6 +169,9 @@ const Register = () => {
                 value={user[item.field]}
                 onChangeText={(text) => setState(text, item.field)}
               />
+              {errors[item.field] && (
+                <Text style={styles.errorText}>{errors[item.field]}</Text>
+              )}
             </View>
           ))}
 
@@ -196,6 +231,9 @@ const Register = () => {
                 value={user[item.field]}
                 onChangeText={(text) => setState(text, item.field)}
               />
+              {errors[item.field] && (
+                <Text style={styles.errorText}>{errors[item.field]}</Text>
+              )}
             </View>
           ))}
 
@@ -298,6 +336,11 @@ const styles = StyleSheet.create({
   roleTextSelected: {
     color: "#fff",
     fontWeight: "bold",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 12,
+    marginTop: 4,
   },
 });
 

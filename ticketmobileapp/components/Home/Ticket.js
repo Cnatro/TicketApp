@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -63,6 +64,7 @@ const Ticket = ({ route }) => {
   const onReceipt = async () => {
     try {
       setLoading(true);
+
       const data = {
         payment_method: "VNPay",
         total_quantity: totalQuantity,
@@ -77,19 +79,25 @@ const Ticket = ({ route }) => {
       };
 
       const token = await AsyncStorage.getItem("token");
-      let res = await authApis(token).post(`${endpoints["receipt"]}/`, data);
+      const res = await authApis(token).post(`${endpoints["receipt"]}/`, data);
 
       if (res.status === 201) {
-        alert("Thanh toán thành công !!");
+        Alert.alert("Thành công", "Thanh toán thành công!");
+
         await authApis(token).post(endpoints["send-email"], {
-          email: "cnatro23@gmail.com", // chỉnh email đăng nhập
+          email: "cnatro23@gmail.com",
           subject: "Thông báo",
           message: data,
         });
+
         navigation.navigate("HomeStack", { screen: "Home" });
       }
     } catch (error) {
-      console.error("Lỗi thanh toán", error);
+      if (error.response.status === 400) {
+        Alert.alert("Lỗi đặt vé", error.response.data.tickets[0]);
+        navigation.navigate("HomeStack", { screen: "Home" });
+      }
+      // console.error("Lỗi thanh toán", error.response);
     } finally {
       setLoading(false);
     }
@@ -153,12 +161,16 @@ const Ticket = ({ route }) => {
             </View>
             <TouchableOpacity
               style={styles.checkoutButton}
-              onPress={() =>
-                navigation.navigate("PayPal", {
-                  totalPrice: totalPrice,
-                  onReceipt: onReceipt,
-                })
-              }
+              onPress={() => {
+                if (totalQuantity === 0) {
+                  Alert.alert("Lỗi", "Vui lòng chọn số lượng vé");
+                } else {
+                  navigation.navigate("PayPal", {
+                    totalPrice: totalPrice,
+                    onReceipt: onReceipt,
+                  });
+                }
+              }}
             >
               <Text style={styles.checkoutButtonText}>Thanh toán</Text>
             </TouchableOpacity>

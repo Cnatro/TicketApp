@@ -177,6 +177,36 @@ class ReceiptCreateSerializer(serializers.ModelSerializer):
     def get_user_name(self, obj):
         return obj.user.username if obj.user else None
 
+    def validate(self, data):
+        user = self.context['request'].user
+        tickets_data = data.get('tickets', [])
+
+        for ticket in tickets_data:
+            try:
+                ticket_type = Ticket_Type.objects.get(pk=ticket['ticket_type_id'], active=True)
+            except Ticket_Type.DoesNotExist:
+                raise serializers.ValidationError("Loại vé không tồn tại.")
+
+            new_event = ticket_type.event
+            existing_tickets = Ticket.objects.filter(receipt__user=user,is_checked_in=False)
+
+            for existing_ticket in existing_tickets:
+                existing_event = existing_ticket.ticket_type.event
+
+                is_time_overlap = (
+                        new_event.started_date <= existing_event.ended_date and
+                        new_event.ended_date >= existing_event.started_date
+                )
+
+                is_same_venue = new_event.venue == existing_event.venue
+
+                if is_time_overlap and is_same_venue:
+                    raise serializers.ValidationError({
+                        'tickets': f"Sự kiện '{new_event.name}' trùng thời gian và địa điểm với sự kiện '{existing_event.name}' bạn đã đặt trước đó."
+                    })
+
+        return data
+
     def create(self, validated_data):
         tickets = validated_data.pop("tickets")
         data = validated_data.copy()

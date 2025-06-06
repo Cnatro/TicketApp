@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import viewsets, generics, parsers, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.status import HTTP_200_OK
 
 from .models import User, Category, Venue, Event, Performance, Ticket, Receipt, Messages, ChatRoom
 from .paypal_configs import paypalrestsdk
@@ -108,6 +109,7 @@ class PerformanceViewSet(viewsets.ViewSet, generics.ListAPIView):
 class TicketViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Ticket.objects.filter(active=True)
     serializer_class = serializers.TicketSerializer
+    permission_classes = [IsAuthenticated]
 
     def list(self, request):
         user = request.user
@@ -130,6 +132,8 @@ class ReceiptViewSet(viewsets.ViewSet, generics.CreateAPIView):
             tickets__ticket_type__event__ended_date__gt=now).order_by('-created_date').first()
         if not latest_receipt:
             return Response({'message': 'Chưa có hóa đơn nào'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(serializers.ReceiptSerializer(latest_receipt).data,status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=False, url_path="receipt-history")
     def get_history_receipt(self, request):

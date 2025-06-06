@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  Alert,
 } from "react-native";
 import { Text, TextInput, Divider } from "react-native-paper";
 import { GoogleLogo } from "phosphor-react-native";
@@ -28,26 +29,43 @@ const Login = () => {
     setUser({ ...user, [field]: value });
   };
 
+  const validationUser = () => {
+    for (const [field, value] of Object.entries(user)) {
+      if (!value.trim()) {
+        Alert.alert(
+          "Lỗi",
+          `Vui lòng nhập ${
+            field === "username" ? "tên đăng nhập" : "mật khẩu"
+          }.`
+        );
+        return false;
+      }
+    }
+    return true;
+  };
+
   const excuteLogin = async () => {
-    try {
-      setLoading(true);
-      let res = await Apis.post(endpoints["login"], {
-        ...user,
-        client_id: "6OYmJrNXua1Qs7FyIr0CnJ9nC1u48nW6bMQ3diAT",
-        client_secret:
-          "7wITsQVtUX9klLPqzfIWpnmcI1qBkkDGG7g3zVj3SAojbn9eF3ui6DKc3SJ46gHpf0Ul860jsbt5pCcvV14QXp73YurggsXEFZBzD1FIMukLluXQ3YcwrGT4t5wPi2IE",
-        grant_type: "password",
-      });
-      await AsyncStorage.setItem('token', res.data.access_token);
-      let u = await authApis(res.data.access_token).get(
-        endpoints["current-user"]
-      );
-      auth.login(u.data);
-      navigation.navigate("HomeStack", { screen: "Home" });
-    } catch (error) {
-      console.error("Lỗi đăng nhập", error);
-    } finally {
-      setLoading(false);
+    if (validationUser()) {
+      try {
+        setLoading(true);
+        let res = await Apis.post(endpoints["login"], {
+          ...user,
+          client_id: "6OYmJrNXua1Qs7FyIr0CnJ9nC1u48nW6bMQ3diAT",
+          client_secret:
+            "7wITsQVtUX9klLPqzfIWpnmcI1qBkkDGG7g3zVj3SAojbn9eF3ui6DKc3SJ46gHpf0Ul860jsbt5pCcvV14QXp73YurggsXEFZBzD1FIMukLluXQ3YcwrGT4t5wPi2IE",
+          grant_type: "password",
+        });
+        await AsyncStorage.setItem("token", res.data.access_token);
+        let u = await authApis(res.data.access_token).get(
+          endpoints["current-user"]
+        );
+        auth.login(u.data);
+        navigation.navigate("HomeStack", { screen: "Home" });
+      } catch (error) {
+        console.error("Lỗi đăng nhập", error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
   return (

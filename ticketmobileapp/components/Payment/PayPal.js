@@ -62,7 +62,7 @@ const PayPal = ({ route }) => {
 
           if (res.data.status === "success") {
             await onReceipt();
-            Alert.alert("Thanh toán","Thanh toán thành công");
+            // Alert.alert("Thanh toán","Thanh toán thành công");
           } else {
             Alert.alert(
               "Thanh toán thất bại",

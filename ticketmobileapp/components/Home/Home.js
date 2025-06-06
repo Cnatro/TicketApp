@@ -121,6 +121,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     fontSize: 14,
+    paddingTop:3
   },
   eventTitleContainer: {
     width: "100%", // Chiếm toàn bộ chiều rộng để căn trái dễ dàng
