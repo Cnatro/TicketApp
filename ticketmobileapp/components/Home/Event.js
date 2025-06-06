@@ -17,7 +17,7 @@ const ITEM_SPACING = 10;
 const NUM_COLUMNS = 2;
 const itemWidth = (width - ITEM_SPACING * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
-const Event = () => {
+const Event = ({ searchQuery }) => {
   const navigation = useNavigation();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -28,7 +28,10 @@ const Event = () => {
 
     try {
       setLoading(true);
-      const url = `${endpoints["events"]}?page=${page}`;
+      let url = `${endpoints["events"]}?page=${page}`;
+      if (searchQuery) {
+        url += `&q=${encodeURIComponent(searchQuery.trim())}`;
+      }
       const res = await Apis.get(url);
       setEvents((prev) => {
         const existingIds = new Set(prev.map((event) => event.id));
@@ -38,7 +41,9 @@ const Event = () => {
         return [...prev, ...newEvents];
       });
 
-      if (!res.data.next) setPage(0);
+      if (!res.data.next || res.data.count <= events.length + res.data.results.length) {
+        setPage(0);
+      }
     } catch (err) {
       console.error("Lỗi tải sự kiện:", err);
     } finally {
@@ -49,6 +54,16 @@ const Event = () => {
   useEffect(() => {
     loadEvents();
   }, []);
+
+  useEffect(() => {
+    setEvents([]);
+    setPage(1);
+    loadEvents();
+  }, [searchQuery]);
+
+  // useEffect(() => {
+  //   loadEvents();
+  // }, [page]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

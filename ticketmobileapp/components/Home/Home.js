@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   StyleSheet,
@@ -20,11 +20,24 @@ const Home = () => {
   const user = userData?._j || null;
   const scrollY = useRef(new Animated.Value(0)).current;
   const navigation = useNavigation();
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const headerBackgroundColor = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: ["#ffffff", "#fbb676"],
     extrapolate: "clamp",
   });
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      setSearchQuery(debouncedQuery); // Chỉ cập nhật sau 500ms nếu không gõ nữa
+    }, 500);
+    return () => clearTimeout(delayDebounce);
+  }, [debouncedQuery]);
+
+  const onChangeSearch = (query) => {
+    setSearchQuery(query); // Cập nhật từ khóa tìm kiếm
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -57,22 +70,24 @@ const Home = () => {
           placeholder="Tìm kiếm..."
           inputStyle={styles.searchInput}
           iconColor="#f15c22"
+          value={debouncedQuery}
+          onChangeText={onChangeSearch}
         />
       </Animated.View>
 
       <FlatList
-        data={[1]} 
+        data={[1]} // dummy data để render nội dung duy nhất 1 lần
         keyExtractor={() => "unique-key"}
         renderItem={() => (
-          <View style={styles.contentContainer}> 
+          <View style={styles.contentContainer}> {/* Thêm container để căn giữa */}
             <Category />
             <View style={styles.eventTitleContainer}>
               <Text style={styles.eventTitle}>Sự kiện</Text>
             </View>
-            <Event />
+            <Event searchQuery={searchQuery} />
           </View>
         )}
-        contentContainerStyle={styles.listContent} 
+        contentContainerStyle={styles.listContent} // Thêm style cho content của FlatList
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }

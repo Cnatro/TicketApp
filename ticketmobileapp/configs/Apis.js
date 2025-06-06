@@ -1,9 +1,9 @@
 // import { BASE_URL } from '@env';
 import axios from "axios";
 
-const BASE_URL = "http://192.168.1.113:8000";
+const BASE_URL = "http://192.168.20.114:8000";
 
-export const webSocketUrl = `ws://192.168.1.113:8000/ws/chat`
+export const webSocketUrl = `ws://192.168.20.114:8000/ws/chat`
 export const endpoints = {
     "events": "/events",
     "categories": "/categories",

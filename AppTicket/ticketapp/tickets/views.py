@@ -10,12 +10,14 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.status import HTTP_200_OK
 
+from django.db.models import Case, When, IntegerField
 from .models import User, Category, Venue, Event, Performance, Ticket, Receipt, Messages, ChatRoom
 from .paypal_configs import paypalrestsdk
 from .utils import  generate_qr_bytes
 from . import serializers, paginators
 from .serializers import UserSerializer, CategorySerializer, TicketTypeSerializer,ReceiptCreateSerializer,ReceiptSerializer,\
     ReceiptHistorySerializer,MessagesSerializer
+from .search import search_events
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
@@ -71,26 +73,61 @@ class VenueViewSet(viewsets.ViewSet, generics.ListAPIView):
         return Response(serializer.data)
 
 
+
 class EventViewSet(viewsets.ViewSet, generics.ListAPIView):
-    current_day = timezone.now()
-    queryset = Event.objects.filter(active=True, ended_date__gt=current_day).order_by('started_date')
     serializer_class = serializers.EventListSerializer
     pagination_class = paginators.EventPagination
 
     def get_queryset(self):
-        queryset = self.queryset
-
+        current_day = timezone.now()
         q = self.request.query_params.get('q')
+
         if q:
-            queryset = queryset.filter(name__icontains=q)
-        return queryset
+            results = search_events(q)
+            ids = [int(hit.meta.id) for hit in results]
+            if ids:
+                preserved_order = Case(
+                    *[When(id=pk, then=pos) for pos, pk in enumerate(ids)],
+                    output_field=IntegerField()
+                )
+                return Event.objects.filter(
+                    id__in=ids,
+                    active=True,
+                    ended_date__gt=current_day
+                ).order_by(preserved_order)
+            else:
+                return Event.objects.none()
+
+        return Event.objects.filter(
+            active=True,
+            ended_date__gt=current_day
+        ).order_by('started_date')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        # Kiểm tra nếu queryset rỗng
+        if not queryset.exists():
+            return Response({
+                'next': None,
+                'previous': None,
+                'count': 0,
+                'results': []
+            }, status=status.HTTP_200_OK)
+
+        # Tiến hành phân trang nếu có dữ liệu
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
         try:
             event = self.get_queryset().get(pk=pk)
         except Event.DoesNotExist:
-            return Response({'error':
-                                 'Event not found'}, status=404)
+            return Response({'error': 'Event not found'}, status=404)
         serializer = serializers.EventDetailSerializer(event, context={'request': request})
         return Response(serializer.data)
 
@@ -268,3 +305,5 @@ class EmailViewSet(viewsets.ViewSet):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
