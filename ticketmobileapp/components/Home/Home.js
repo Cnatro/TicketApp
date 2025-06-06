@@ -43,13 +43,22 @@ const Home = () => {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <Animated.View
-        style={[styles.headerContainer, { backgroundColor: headerBackgroundColor }]}
+        style={[
+          styles.headerContainer,
+          { backgroundColor: headerBackgroundColor },
+        ]}
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.logo}>
-              Zive<Text style={styles.logoGo}>Go</Text>
-            </Text>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("HomeStack", { screen: "Home" })
+              }
+            >
+              <Text style={styles.logo}>
+                Zive<Text style={styles.logoGo}>Go</Text>
+              </Text>
+            </TouchableOpacity>
             <Text style={styles.slogan}>Đi chơi đâu, lên Zivego</Text>
           </View>
           <View style={styles.iconContainer}>
@@ -70,16 +79,16 @@ const Home = () => {
           placeholder="Tìm kiếm..."
           inputStyle={styles.searchInput}
           iconColor="#f15c22"
-          value={debouncedQuery}
-          onChangeText={onChangeSearch}
+          // value={()=> debouncedQuery}
+          // onChangeText={() => onChangeSearch()}
         />
       </Animated.View>
 
       <FlatList
-        data={[1]} // dummy data để render nội dung duy nhất 1 lần
+        data={[1]}
         keyExtractor={() => "unique-key"}
         renderItem={() => (
-          <View style={styles.contentContainer}> {/* Thêm container để căn giữa */}
+          <View style={styles.contentContainer}>
             <Category />
             <View style={styles.eventTitleContainer}>
               <Text style={styles.eventTitle}>Sự kiện</Text>
@@ -87,7 +96,7 @@ const Home = () => {
             <Event searchQuery={searchQuery} />
           </View>
         )}
-        contentContainerStyle={styles.listContent} // Thêm style cho content của FlatList
+        contentContainerStyle={styles.listContent}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }
@@ -136,7 +145,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     fontSize: 14,
-    paddingTop:3
+    paddingTop: 3,
   },
   eventTitleContainer: {
     width: "100%", // Chiếm toàn bộ chiều rộng để căn trái dễ dàng
