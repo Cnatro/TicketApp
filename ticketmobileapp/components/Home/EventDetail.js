@@ -7,19 +7,19 @@ import {
   View,
   Dimensions,
   TouchableOpacity,
-  findNodeHandle,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import Apis, { endpoints } from "../../configs/Apis";
 import Spinner from "../Utils/spinner";
 import { useNavigation } from "@react-navigation/native";
-
+import { WebView } from 'react-native-webview';
 const { width } = Dimensions.get("window");
+
 
 const EventDetail = ({ route }) => {
   const { eventId } = route.params;
-  const [eventDetail, setEventDetail] = useState([]);
+  const [eventDetail, setEventDetail] = useState({});
   const [loading, setLoading] = useState(false);
   const scrollViewRef = useRef(null);
   const buttonRef = useRef(null);
@@ -199,8 +199,47 @@ const EventDetail = ({ route }) => {
                     {eventDetail.venue.address}
                   </Text>
                 </View>
+                {/* Bản đồ */}
+                {eventDetail.venue.latitude && eventDetail.venue.longitude ? (
+                  <View style={{ height: 300, borderRadius: 10, overflow: 'hidden', marginTop: 10 }}>
+                    <WebView
+                      source={{
+                        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>html, body, #map { height: 100%; margin: 0; padding: 0; }</style>
+            <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+            <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+          </head>
+          <body>
+            <div id="map"></div>
+            <script>
+              var map = L.map('map').setView([${eventDetail.venue.latitude}, ${eventDetail.venue.longitude}], 14);
+              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+              }).addTo(map);
+              L.marker([${eventDetail.venue.latitude}, ${eventDetail.venue.longitude}])
+                .addTo(map)
+                .bindPopup('${eventDetail.venue.name}')
+                .openPopup();
+            </script>
+          </body>
+          </html>
+        `
+                      }}
+                      originWhitelist={['*']}
+                      javaScriptEnabled={true}
+                      domStorageEnabled={true}
+                    />
+                  </View>
+                ) : (
+                  <Text style={styles.warningText}>Không có tọa độ cho địa điểm này</Text>
+                )}
                 <View>
-                  {eventDetail.ticket_types.length > 0 && (
+                  {eventDetail.ticket_types && eventDetail.ticket_types.length > 0 && (
                     <>
                       <View style={styles.cardHeader}>
                         <Ionicons
@@ -239,6 +278,8 @@ const EventDetail = ({ route }) => {
                 </View>
               </View>
             )}
+
+            {/* Chương trình sự kiện */}
             {eventDetail.performances &&
               eventDetail.performances.length > 0 && (
                 <View>
@@ -504,6 +545,38 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 30,
+  },
+  mapContainer: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 14,
+    marginBottom: 14,
+  },
+  map: {
+    flex: 1,
+  },
+  calloutContainer: {
+    width: 150,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+  },
+  calloutTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  calloutDescription: {
+    fontSize: 12,
+    color: '#666',
+  },
+  warningText: {
+    fontSize: 14,
+    color: '#EF4444',
+    marginTop: 10,
+    marginLeft: 26,
   },
 });
 

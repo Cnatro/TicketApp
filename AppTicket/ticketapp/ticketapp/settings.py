@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     # 'ckeditor_uploader',
     'debug_toolbar',
     'oauth2_provider',
+    'django_elasticsearch_dsl',
     'channels',
 ]
 
@@ -64,6 +65,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
+
+ELASTICSEARCH_DSL = {
+    'default': {
+        'hosts': 'http://localhost:9200'
+    },
+}
 
 ROOT_URLCONF = 'ticketapp.urls'
 
@@ -92,7 +99,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "ticketdb",
         "USER": "root",
-        "PASSWORD": "Admin123@",
+        "PASSWORD": "root",
         "HOST": "",
         "PORT": "3306",
     }

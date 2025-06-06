@@ -1,5 +1,12 @@
 import React, { useRef } from "react";
-import { Animated, StyleSheet, Text, View, StatusBar } from "react-native";
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  View,
+  StatusBar,
+  FlatList,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon, Searchbar } from "react-native-paper";
 import Category from "./Category";
@@ -23,16 +30,12 @@ const Home = () => {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <Animated.View
-        style={[
-          styles.headerContainer,
-          { backgroundColor: headerBackgroundColor },
-        ]}
+        style={[styles.headerContainer, { backgroundColor: headerBackgroundColor }]}
       >
         <View style={styles.header}>
           <View>
             <Text style={styles.logo}>
-              Zive
-              <Text style={styles.logoGo}>Go</Text>
+              Zive<Text style={styles.logoGo}>Go</Text>
             </Text>
             <Text style={styles.slogan}>Đi chơi đâu, lên Zivego</Text>
           </View>
@@ -57,21 +60,25 @@ const Home = () => {
         />
       </Animated.View>
 
-      {/* Scrollable content */}
-      <Animated.ScrollView
-        style={styles.scrollView}
+      <FlatList
+        data={[1]} // dummy data để render nội dung duy nhất 1 lần
+        keyExtractor={() => "unique-key"}
+        renderItem={() => (
+          <View style={styles.contentContainer}> {/* Thêm container để căn giữa */}
+            <Category />
+            <View style={styles.eventTitleContainer}>
+              <Text style={styles.eventTitle}>Sự kiện</Text>
+            </View>
+            <Event />
+          </View>
+        )}
+        contentContainerStyle={styles.listContent} // Thêm style cho content của FlatList
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }
         )}
         scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <Category />
-        <Text style={styles.eventTitle}>Sự kiện</Text>
-        <Event />
-      </Animated.ScrollView>
+      />
     </SafeAreaView>
   );
 };
@@ -114,22 +121,25 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     fontSize: 14,
-    marginTop: 0,
-    paddingBottom: 20,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 30,
-    paddingTop: 0,
+  eventTitleContainer: {
+    width: "100%", // Chiếm toàn bộ chiều rộng để căn trái dễ dàng
+    alignItems: "flex-start", // Đặt tiêu đề nằm bên trái
   },
   eventTitle: {
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: "bold",
+    color: "darkblue",
     marginTop: 8,
     marginBottom: 16,
+    paddingHorizontal: 16, // Khoảng cách lề trái
+  },
+  contentContainer: {
+    alignItems: "center",
+    width: "100%",
+  },
+  listContent: {
+    paddingBottom: 16,
   },
   iconContainer: {
     flexDirection: "row",

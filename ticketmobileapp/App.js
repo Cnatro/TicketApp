@@ -5,6 +5,7 @@ import Home from "./components/Home/Home";
 import EventDetail from "./components/Home/EventDetail";
 import { createStackNavigator } from "@react-navigation/stack";
 import UserHome from "./components/User/UserHome";
+import EventCategory from "./components/Home/EventCategory";
 import { useReducer } from "react";
 import UserReducer from "./reducers/UserReducer";
 import { DispatcherUserContext, UserContext } from "./contexts/MyContext";
@@ -33,6 +34,10 @@ const HomeStack = () => {
         name="EventDetail"
         component={EventDetail}
         options={{ title: "Chi tiết sự kiện" }}
+      />
+      <Stack.Screen
+        name="EventCategory"
+        component={EventCategory}
       />
       <Stack.Screen
         name="Ticket"

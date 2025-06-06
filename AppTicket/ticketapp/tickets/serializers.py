@@ -58,7 +58,7 @@ class VenueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Venue
-        fields = ['id', 'name', 'img_seat', 'address']
+        fields = ['id', 'name', 'address', 'latitude', 'longitude', 'img_seat', 'address']
 
 
 class PerformanceSerializer(serializers.ModelSerializer):
@@ -215,6 +215,32 @@ class ReceiptSerializer(serializers.ModelSerializer):
         fields = ["id", "payment_method", "total_quantity", "total_price", "tickets"]
 
 
+class ReceiptHistorySerializer(serializers.ModelSerializer):
+    event_name = serializers.SerializerMethodField()
+    venue_name = serializers.SerializerMethodField()
+    venue_address = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Receipt
+        fields = ["id", "event_name", "venue_name", "venue_address", "total_price"]
+
+    def get_event_name(self, receipt):
+        first_ticket = receipt.tickets.first()
+        if first_ticket:
+            return first_ticket.ticket_type.event.name
+        return None
+
+    def get_venue_name(self, receipt):
+        first_ticket = receipt.tickets.first()
+        if first_ticket:
+            return first_ticket.ticket_type.event.venue.name
+        return None
+
+    def get_venue_address(self, receipt):
+        first_ticket = receipt.tickets.first()
+        if first_ticket:
+            return first_ticket.ticket_type.event.venue.address
+        return None
 class MessagesSerializer(serializers.ModelSerializer):
     sender = serializers.CharField(source="sender.username", read_only=True)
     room_id = serializers.IntegerField(source="room.id", read_only=True)

@@ -4,6 +4,8 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+from django.template.defaulttags import querystring
+from django.views.generic import detail
 from rest_framework.response import Response
 from rest_framework import viewsets, permissions, filters, generics, parsers, status
 from rest_framework.decorators import action
@@ -11,13 +13,12 @@ from rest_framework.permissions import IsAuthenticated
 
 from .models import User, Category, Venue, Event, Performance, Ticket_Type, Ticket, Receipt, Comment, Review, Messages, \
     Notification, ChatRoom
-from tickets import serializers
-from tickets.serializers import UserSerializer, CategorySerializer, TicketTypeSerializer, ReceiptCreateSerializer, \
-    ReceiptSerializer
 from tickets.paypal_configs import paypalrestsdk
-
 from .serializers import MessagesSerializer
 from .utils import  generate_qr_bytes
+from tickets import serializers, paginators
+from tickets.serializers import UserSerializer, CategorySerializer, TicketTypeSerializer,ReceiptCreateSerializer,ReceiptSerializer,\
+    ReceiptHistorySerializer
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
@@ -25,7 +26,7 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
     serializer_class = serializers.UserSerializer
     parser_classes = [parsers.MultiPartParser]
 
-    @action(detail=False, methods=['get'], url_path='current-user', permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['get', 'patch'], url_path='current-user', permission_classes = [IsAuthenticated])
     def get_current_user(self, request):
         u = request.user
         if request.method.__eq__('PATCH'):
@@ -77,6 +78,15 @@ class EventViewSet(viewsets.ViewSet, generics.ListAPIView):
     current_day = timezone.now()
     queryset = Event.objects.filter(active=True, ended_date__gt=current_day).order_by('started_date')
     serializer_class = serializers.EventListSerializer
+    pagination_class = paginators.EventPagination
+
+    def get_queryset(self):
+        queryset = self.queryset
+
+        q = self.request.query_params.get('q')
+        if q:
+            queryset = queryset.filter(name__icontains=q)
+        return queryset
 
     def retrieve(self, request, pk=None):
         try:
@@ -125,8 +135,17 @@ class ReceiptViewSet(viewsets.ViewSet, generics.CreateAPIView):
         if not latest_receipt:
             return Response({'message': 'Chưa có hóa đơn nào'}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = serializers.ReceiptSerializer(latest_receipt)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    @action(methods=['get'], detail=False, url_path="receipt-history")
+    def get_history_receipt(self, request):
+        user = request.user
+        history_receipt = Receipt.objects.filter(user=user).order_by('-created_date')
+        if not history_receipt:
+            return Response({'message': 'Chưa có hóa đơn nào'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = serializers.ReceiptHistorySerializer(history_receipt, many=True)
+        return Response(serializer.data)
+
+
+
 
 
 class PayPalViewSet(viewsets.ViewSet):

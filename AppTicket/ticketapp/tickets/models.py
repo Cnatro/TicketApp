@@ -37,6 +37,8 @@ class Venue(BasicModel):
     capacity = models.IntegerField(default=0)
     img_seat = CloudinaryField("img_seat")
     address = models.CharField(max_length=255)
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.name} - {self.capacity}"

@@ -24,6 +24,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "permissions": [
+      {
+        "name": "location",
+        "reason": "Ứng dụng cần quyền truy cập vị trí để hiển thị bản đồ."
+      }
+    ]
   }
 }
