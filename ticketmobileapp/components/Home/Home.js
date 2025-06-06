@@ -61,10 +61,10 @@ const Home = () => {
       </Animated.View>
 
       <FlatList
-        data={[1]} // dummy data để render nội dung duy nhất 1 lần
+        data={[1]} 
         keyExtractor={() => "unique-key"}
         renderItem={() => (
-          <View style={styles.contentContainer}> {/* Thêm container để căn giữa */}
+          <View style={styles.contentContainer}> 
             <Category />
             <View style={styles.eventTitleContainer}>
               <Text style={styles.eventTitle}>Sự kiện</Text>
@@ -72,7 +72,7 @@ const Home = () => {
             <Event />
           </View>
         )}
-        contentContainerStyle={styles.listContent} // Thêm style cho content của FlatList
+        contentContainerStyle={styles.listContent} 
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }

@@ -4,21 +4,17 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from django.template.defaulttags import querystring
-from django.views.generic import detail
 from rest_framework.response import Response
-from rest_framework import viewsets, permissions, filters, generics, parsers, status
+from rest_framework import viewsets, generics, parsers, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 
-from .models import User, Category, Venue, Event, Performance, Ticket_Type, Ticket, Receipt, Comment, Review, Messages, \
-    Notification, ChatRoom
-from tickets.paypal_configs import paypalrestsdk
-from .serializers import MessagesSerializer
+from .models import User, Category, Venue, Event, Performance, Ticket, Receipt, Messages, ChatRoom
+from .paypal_configs import paypalrestsdk
 from .utils import  generate_qr_bytes
-from tickets import serializers, paginators
-from tickets.serializers import UserSerializer, CategorySerializer, TicketTypeSerializer,ReceiptCreateSerializer,ReceiptSerializer,\
-    ReceiptHistorySerializer
+from . import serializers, paginators
+from .serializers import UserSerializer, CategorySerializer, TicketTypeSerializer,ReceiptCreateSerializer,ReceiptSerializer,\
+    ReceiptHistorySerializer,MessagesSerializer
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):

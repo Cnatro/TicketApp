@@ -64,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ELASTICSEARCH_DSL = {
@@ -99,7 +100,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "ticketdb",
         "USER": "root",
-        "PASSWORD": "root",
+        "PASSWORD": "Admin123@",
         "HOST": "",
         "PORT": "3306",
     }
@@ -306,7 +307,8 @@ TIME_ZONE = 'Asia/Ho_Chi_Minh'
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -329,7 +331,7 @@ PAYPAL_CLIENT_SECRET = 'EDA1Sgj2_uF7LWH8pQEfJfkI9aBzKkM631PRR5qZ2Rp_WLfj0KFnBDXx
 # Websocket
 ASGI_APPLICATION = 'ticketapp.asgi.application'
 
-#Email
+# Email
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
@@ -337,4 +339,3 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'cnatrocode@gmail.com'
 EMAIL_HOST_PASSWORD = 'agsr xdix uqbg qshl'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
