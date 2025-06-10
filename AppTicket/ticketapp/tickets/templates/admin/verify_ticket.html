@@ -1,5 +1,7 @@
 {% extends 'admin/base_site.html' %}
 {% block content %}
+{% csrf_token %}
+<meta name="csrf-token" content="{{ csrf_token }}">
 <h1>Quét mã QR xác thực vé</h1>
 
 <div id="reader" style="width:300px; border: 3px solid #ccc; transition: border 0.3s;"></div>
@@ -24,15 +26,26 @@
       if (match) {
         const receiptId = match[1]; // 12
         const ticketTypeId = match[2]; // 3
-
-    fetch(`/admin/api/verify-ticket/?receipt_id=${receiptId}&ticket_type_id=${ticketTypeId}`)
-      .then(res => res.json())
-      .then(data => {
-      alert(data.message);
-      });
-  } else {
-    document.getElementById('result').innerHTML = `<span style="color:red">Mã QR không hợp lệ!</span>`;
-  }
+        const csrftoken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    //`/verify-ticket/?receipt_id=${receiptId}&ticket_type_id=${ticketTypeId}`
+        fetch('/admin/verify-ticket/',{
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrftoken
+            },
+            body: JSON.stringify({
+                'receipt_id':receiptId,
+                'ticket_type_id':ticketTypeId
+            })
+        })
+          .then(res => res.json())
+          .then(data => {
+          alert(data.message);
+          });
+      } else {
+        document.getElementById('result').innerHTML = `<span style="color:red">Mã QR không hợp lệ!</span>`;
+      }
     }
 
     const qr = new Html5Qrcode("reader");

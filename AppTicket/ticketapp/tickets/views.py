@@ -1,5 +1,4 @@
 from email.mime.image import MIMEImage
-
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -8,7 +7,6 @@ from rest_framework.response import Response
 from rest_framework import viewsets, generics, parsers, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.status import HTTP_200_OK
 
 from django.db.models import Case, When, IntegerField
 from .models import User, Category, Venue, Event, Performance, Ticket, Receipt, Messages, ChatRoom
@@ -166,11 +164,13 @@ class ReceiptViewSet(viewsets.ViewSet, generics.CreateAPIView):
         now = timezone.now()
         latest_receipt = Receipt.objects.filter(
             user=user,
-            tickets__ticket_type__event__ended_date__gt=now).order_by('-created_date').first()
+            tickets__ticket_type__event__ended_date__gt=now
+        ).order_by('-created_date')
         if not latest_receipt:
             return Response({'message': 'Chưa có hóa đơn nào'}, status=status.HTTP_404_NOT_FOUND)
 
-        return Response(serializers.ReceiptSerializer(latest_receipt).data,status=status.HTTP_200_OK)
+        return Response(serializers.ReceiptSerializer(latest_receipt,many=True).data,status=status.HTTP_200_OK)
+
 
     @action(methods=['get'], detail=False, url_path="receipt-history")
     def get_history_receipt(self, request):
@@ -180,10 +180,6 @@ class ReceiptViewSet(viewsets.ViewSet, generics.CreateAPIView):
             return Response({'message': 'Chưa có hóa đơn nào'}, status=status.HTTP_404_NOT_FOUND)
         serializer = serializers.ReceiptHistorySerializer(history_receipt, many=True)
         return Response(serializer.data)
-
-
-
-
 
 class PayPalViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]

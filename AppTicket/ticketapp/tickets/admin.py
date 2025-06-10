@@ -1,15 +1,11 @@
 from django.contrib import admin
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import Group, Permission
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.template.response import TemplateResponse
 from django.utils.html import format_html
 from django.urls import reverse, path
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 
 from .models import *
 import qrcode
@@ -18,7 +14,7 @@ from io import BytesIO
 from django.db.models import Avg
 from ticketapp.settings import ALLOWED_GROUPS
 from django.contrib.auth.hashers import make_password
-import requests
+import requests,json
 
 from .statistical import get_revenue_ticket, get_interest_event
 
@@ -35,11 +31,11 @@ class TicketAppAdminSite(admin.AdminSite):
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path('chat/', self.admin_view(admin_chat_view), name='admin_chat'),
-            path('verify-ticket/', self.admin_view(verify_ticket_page), name="admin_check_ticket"),
-            path('api/verify-ticket/', verify_ticket, name='verify_ticket'),
+            path('chat/', self.admin_chat_view, name='admin_chat'),
+            path('verify-ticket/', self.verify_ticket_page, name="admin_check_ticket"),
         ]
         return custom_urls + urls
+
 
     def index(self, request, extra_context=None):
         event_ends = Event.objects.filter(
@@ -51,11 +47,63 @@ class TicketAppAdminSite(admin.AdminSite):
         interest_data = get_interest_event(request)
         context = {
             **self.each_context(request),
-            "event_ends":event_ends,
-            "revenue_data":revenue_data,
-            "interest_data":interest_data
+            "event_ends": event_ends,
+            "revenue_data": revenue_data,
+            "interest_data": interest_data
         }
         return TemplateResponse(request, "admin/custom_index.html", context)
+
+
+    def admin_chat_view(self, request):
+        chat_users = User.objects.filter(groups__name="ROLE_CUSTOMER")
+
+        selected_user_id = request.GET.get('user_id')
+        selected_user = None
+        room_name = None
+        messages = []
+
+        if selected_user_id:
+            selected_user = get_object_or_404(User, id=selected_user_id)
+            room_name = f"room_{selected_user.id}"
+
+            if request.method == "POST":
+                content = request.POST.get('message')
+                if content:
+                    Messages.objects.create(sender=selected_user, content=content, from_admin=True)
+                return HttpResponseRedirect(f"?user_id={selected_user_id}")
+
+            messages = Messages.objects.filter(room__name=room_name).order_by('created_date')
+        context = {
+            'chat_users': chat_users,
+            'selected_user': selected_user,
+            'messages': messages,
+            'room_name': room_name
+        }
+
+        return render(request, 'admin/chat_view.html', context)
+
+
+    def verify_ticket_page(self, request):
+        if request.method == "POST":
+            data = json.loads(request.body)
+            receipt_id = data.get('receipt_id')
+            ticket_type_id = data.get('ticket_type_id')
+
+            try:
+                ticket = Ticket.objects.get(receipt_id=receipt_id, ticket_type_id=ticket_type_id)
+
+                if ticket.is_checked_in:
+                    return JsonResponse({'message': 'Vé đã được sử dụng!'}, status=400)
+                elif ticket.ticket_type.event.ended_date < timezone.now():
+                    return JsonResponse({'message': 'Sự kiện đã kết thúc!'}, status=400)
+                else:
+                    ticket.is_checked_in = True
+                    ticket.save()
+                    return JsonResponse({'message': 'Vé hợp lệ. Cho phép vào!'})
+            except Ticket.DoesNotExist:
+                return JsonResponse({'message': 'Không tìm thấy vé!'}, status=404)
+
+        return render(request, 'admin/verify_ticket.html')
 
 
 class BaseModelAdmin(admin.ModelAdmin):
@@ -219,7 +267,6 @@ class TicketTypeModelAdmin(BaseModelAdmin):
             kwargs["queryset"] = Event.objects.filter(started_date__gt=now)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-
     def format_price(self, obj):
         return f"{obj.price:,.0f} VNĐ".replace(",", ".")
 
@@ -227,7 +274,7 @@ class TicketTypeModelAdmin(BaseModelAdmin):
 
 
 class TicketModelAdmin(BaseModelAdmin):
-    list_display = ['id', 'event_name', 'ticket_type', 'qr_code', 'receipt','quantity', 'actions_link']
+    list_display = ['id', 'event_name', 'ticket_type', 'qr_code', 'receipt', 'quantity', 'actions_link']
     list_filter = ['ticket_type', 'receipt__id']
     list_select_related = ['receipt']
     list_per_page = 5
@@ -281,7 +328,8 @@ class PerformanceModelAdmin(BaseModelAdmin):
 
 
 class ReceiptModelAdmin(BaseModelAdmin):
-    list_display = ['id', 'user', 'payment_method', 'is_paid', 'total_quantity', 'format_total_price','created_date', 'actions_link']
+    list_display = ['id', 'user', 'payment_method', 'is_paid', 'total_quantity', 'format_total_price', 'created_date',
+                    'actions_link']
     list_per_page = 5
     search_fields = ['user']
     list_filter = ['is_paid']
@@ -305,61 +353,6 @@ class GroupModelAdmin(BaseModelAdmin):
     search_fields = ['name']
     list_per_page = 5
     list_display_links = ['name']
-
-
-@staff_member_required
-def admin_chat_view(request):
-    chat_users = User.objects.filter(groups__name="ROLE_CUSTOMER")
-
-    selected_user_id = request.GET.get('user_id')
-    selected_user = None
-    room_name = None
-    messages = []
-
-    if selected_user_id:
-        selected_user = get_object_or_404(User, id=selected_user_id)
-        room_name = f"room_{selected_user.id}"
-
-        if request.method == "POST":
-            content = request.POST.get('message')
-            if content:
-                Messages.objects.create(sender=selected_user, content=content, from_admin=True)
-            return HttpResponseRedirect(f"?user_id={selected_user_id}")
-
-        messages = Messages.objects.filter(room__name=room_name).order_by('created_date')
-    context = {
-        'chat_users': chat_users,
-        'selected_user': selected_user,
-        'messages': messages,
-        'room_name': room_name
-    }
-    return render(request, 'admin/chat_view.html', context)
-
-
-@staff_member_required
-@permission_classes([IsAuthenticated])
-def verify_ticket_page(request):
-    return render(request, 'admin/verify_ticket.html')
-
-
-@api_view(['GET'])
-def verify_ticket(request):
-    receipt_id = request.GET.get('receipt_id')
-    ticket_type_id = request.GET.get('ticket_type_id')
-
-    try:
-        ticket = Ticket.objects.get(receipt_id=receipt_id, ticket_type_id=ticket_type_id)
-
-        if ticket.is_checked_in:
-            return Response({'message': 'Vé đã được sử dụng!'}, status=400)
-        # elif ticket.ticket_type.event.ended_date < timezone.now():
-        #     return Response({'message': 'Sự kiện đã kết thúc!'}, status=400)
-        else:
-            ticket.is_checked_in = True
-            ticket.save()
-            return Response({'message': 'Vé hợp lệ. Cho phép vào!'})
-    except Ticket.DoesNotExist:
-        return Response({'message': 'Không tìm thấy vé!'}, status=404)
 
 
 admin_site = TicketAppAdminSite(name="myAdminSite")

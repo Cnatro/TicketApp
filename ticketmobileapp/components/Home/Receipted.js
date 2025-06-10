@@ -35,33 +35,40 @@ const Receipted = () => {
 
   return (
     <>
-      {receiptLatest && receiptLatest.id > 0 ? (
-        <View style={styles.container}>
-          {loading && <Spinner />}
-          <Text style={styles.header}>🧾 Hóa đơn #{receiptLatest.id}</Text>
-          <View style={styles.infoBlock}>
-            <Text style={styles.label}>Phương thức thanh toán:</Text>
-            <Text style={styles.value}>{receiptLatest.payment_method}</Text>
-          </View>
-          <View style={styles.infoBlock}>
-            <Text style={styles.label}>Tổng số lượng:</Text>
-            <Text style={styles.value}>{receiptLatest.total_quantity}</Text>
-          </View>
-          <View style={styles.infoBlock}>
-            <Text style={styles.label}>Tổng tiền:</Text>
-            <Text style={styles.value}>
-              {Number(receiptLatest.total_price).toLocaleString()} VNĐ
-            </Text>
-          </View>
-
-          <Text style={styles.ticketListTitle}>🎟 Danh sách vé:</Text>
-          <FlatList
-            data={receiptLatest.tickets}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => <TicketItem ticket={item} />}
-            contentContainerStyle={{ paddingBottom: 40 }}
-          />
-        </View>
+      {receiptLatest && receiptLatest.length > 0 ? (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {receiptLatest.map((receipt) => (
+            <View style={styles.container} key={receipt.id}>
+              {loading && <Spinner />}
+              <Text style={styles.header}>🧾 Hóa đơn #{receipt.id}</Text>
+              <View style={styles.infoBlock}>
+                <Text style={styles.label}>Phương thức thanh toán:</Text>
+                <Text style={styles.value}>{receipt.payment_method}</Text>
+              </View>
+              <View style={styles.infoBlock}>
+                <Text style={styles.label}>Tổng số lượng:</Text>
+                <Text style={styles.value}>{receipt.total_quantity}</Text>
+              </View>
+              <View style={styles.infoBlock}>
+                <Text style={styles.label}>Tổng tiền:</Text>
+                <Text style={styles.value}>
+                  {Number(receipt.total_price).toLocaleString()} VNĐ
+                </Text>
+              </View>
+              <Text style={styles.ticketListTitle}>🎟 Danh sách vé:</Text>
+              <FlatList
+                data={receipt.tickets}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => <TicketItem ticket={item} />}
+                contentContainerStyle={{ paddingBottom: 40 }}
+                scrollEnabled={false}
+              />
+            </View>
+          ))}
+        </ScrollView>
       ) : (
         <View style={styles.container}>
           <Text style={styles.noReceiptText}>
@@ -127,6 +134,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     backgroundColor: "#f9fafb",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
   },
   header: {
     fontSize: 26,
@@ -218,6 +227,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#6b7280",
     textAlign: "center",
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#f9fafb",
+  },
+  scrollContent: {
+    padding: 5,
+    paddingBottom: 80,
   },
 });
 
