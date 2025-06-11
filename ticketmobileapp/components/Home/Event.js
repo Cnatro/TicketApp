@@ -17,7 +17,7 @@ const ITEM_SPACING = 10;
 const NUM_COLUMNS = 2;
 const itemWidth = (width - ITEM_SPACING * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
-const Event = ({ searchQuery }) => {
+const Event = ({ search }) => {
   const navigation = useNavigation();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -28,9 +28,9 @@ const Event = ({ searchQuery }) => {
 
     try {
       setLoading(true);
-      let url = `${endpoints["events"]}?page=${page}`;
-      if (searchQuery) {
-        url += `&q=${encodeURIComponent(searchQuery.trim())}`;
+      let url = `${endpoints["events"]}/?page=${page}`;
+      if (search) {
+        url += `&q=${encodeURIComponent(search.trim())}`;
       }
       const res = await Apis.get(url);
       setEvents((prev) => {
@@ -58,12 +58,12 @@ const Event = ({ searchQuery }) => {
   useEffect(() => {
     setEvents([]);
     setPage(1);
-    loadEvents();
-  }, [searchQuery]);
 
-  // useEffect(() => {
-  //   loadEvents();
-  // }, [page]);
+  }, [search]);
+
+  useEffect(() => {
+    loadEvents();
+  }, [page]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

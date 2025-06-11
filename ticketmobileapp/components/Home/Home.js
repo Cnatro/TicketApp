@@ -14,6 +14,7 @@ import Event from "./Event";
 import { TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import useAuth from "../../Hooks/useAuth";
+import EventTopTrend from "./EventTopTrend";
 
 const Home = () => {
   const [userData] = useAuth();
@@ -21,7 +22,8 @@ const Home = () => {
   const scrollY = useRef(new Animated.Value(0)).current;
   const navigation = useNavigation();
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [search, setSearch] = useState("");
+
   const headerBackgroundColor = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: ["#ffffff", "#fbb676"],
@@ -30,13 +32,13 @@ const Home = () => {
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      setSearchQuery(debouncedQuery); // Chỉ cập nhật sau 500ms nếu không gõ nữa
+      setSearch(debouncedQuery);
     }, 500);
     return () => clearTimeout(delayDebounce);
   }, [debouncedQuery]);
 
   const onChangeSearch = (query) => {
-    setSearchQuery(query); // Cập nhật từ khóa tìm kiếm
+    setSearch(query);
   };
 
   return (
@@ -79,8 +81,8 @@ const Home = () => {
           placeholder="Tìm kiếm..."
           inputStyle={styles.searchInput}
           iconColor="#f15c22"
-          // value={()=> debouncedQuery}
-          // onChangeText={() => onChangeSearch()}
+          value={debouncedQuery}
+          onChangeText={(query) => setDebouncedQuery(query)}
         />
       </Animated.View>
 
@@ -90,10 +92,18 @@ const Home = () => {
         renderItem={() => (
           <View style={styles.contentContainer}>
             <Category />
+            {search === "" ? (
+              <>
+                <View style={styles.eventTitleContainer}>
+                  <Text style={styles.eventTitle}>Sự kiện hot</Text>
+                </View>
+                <EventTopTrend />
+              </>
+            ) : null}
             <View style={styles.eventTitleContainer}>
-              <Text style={styles.eventTitle}>Sự kiện</Text>
+              <Text style={styles.eventTitle}>Gợi ý sự kiện</Text>
             </View>
-            <Event searchQuery={searchQuery} />
+            <Event search={search} />
           </View>
         )}
         contentContainerStyle={styles.listContent}

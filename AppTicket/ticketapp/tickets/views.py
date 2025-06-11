@@ -4,6 +4,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+
 from rest_framework.response import Response
 from rest_framework import viewsets, generics, parsers, status
 from rest_framework.decorators import action
@@ -17,7 +18,7 @@ from .utils import  generate_qr_bytes
 from . import serializers, paginators
 from .serializers import UserSerializer, CategorySerializer, TicketTypeSerializer,ReceiptCreateSerializer,ReceiptSerializer,\
     ReceiptHistorySerializer,MessagesSerializer
-from .search import search_events
+from .search import search_events, get_top_events
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
@@ -42,10 +43,10 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.filter(active=True)
     serializer_class = serializers.CategorySerializer
 
-    def list(self, request):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    # def list(self, request):
+    #     queryset = self.get_queryset()
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return Response(serializer.data)
 
     @action(methods=['get'], detail=True, url_path="events")
     def get_event_by_category(self, request, pk=None):
@@ -74,12 +75,13 @@ class VenueViewSet(viewsets.ViewSet, generics.ListAPIView):
 
 
 
-class EventViewSet(viewsets.ViewSet, generics.ListAPIView):
+class EventViewSet(viewsets.ViewSet, generics.GenericAPIView):
+    queryset = Event.objects.all()
     serializer_class = serializers.EventListSerializer
     pagination_class = paginators.EventPagination
 
     def get_queryset(self):
-        current_day = timezone.now()
+        current_time = timezone.now()
         q = self.request.query_params.get('q')
 
         if q:
@@ -93,19 +95,18 @@ class EventViewSet(viewsets.ViewSet, generics.ListAPIView):
                 return Event.objects.filter(
                     id__in=ids,
                     active=True,
-                    ended_date__gt=current_day
+                    ended_date__gt=current_time
                 ).order_by(preserved_order)
             else:
                 return Event.objects.none()
 
         return Event.objects.filter(
             active=True,
-            ended_date__gt=current_day
+            ended_date__gt=current_time
         ).order_by('started_date')
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        # Kiểm tra nếu queryset rỗng
         if not queryset.exists():
             return Response({
                 'next': None,
@@ -126,16 +127,66 @@ class EventViewSet(viewsets.ViewSet, generics.ListAPIView):
     def retrieve(self, request, pk=None):
         try:
             event = self.get_queryset().get(pk=pk)
+            event.view_count += 1
+            event.save(update_fields=['view_count'])
+            event.refresh_from_db(fields=['view_count'])#đảm bảo giá trị mới được serializer lấy đúng
+
         except Event.DoesNotExist:
             return Response({'error': 'Event not found'}, status=404)
         serializer = serializers.EventDetailSerializer(event, context={'request': request})
         return Response(serializer.data)
 
-    @action(methods=['get'], detail=True, url_name="ticket-type", url_path="event_types")
+    @action(methods=['get'], detail=True, url_path="event_types")
     def get_event_types(self, request, pk):
         event_types = self.get_object().ticket_types.filter(active=True)
         serializer = serializers.TicketTypeSerializer(event_types, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='top-events')
+    def top_events(self, request):
+        ids = get_top_events()
+        current_time = timezone.now()
+        if not ids:
+            return Response({'results': []}, status=200)
+        preserved = Case(*[When(id=pk, then=pos) for pos, pk in enumerate(ids)], output_field=IntegerField())
+        events = Event.objects.filter(id__in=ids, active=True, ended_date__gt=current_time).order_by(preserved)
+        serializer = serializers.EventListSerializer(events, many=True, context={'request': request})
+        return Response({'results': serializer.data}, status=200)
+
+    @action(methods=['get'], detail=False, url_path='end-events', permission_classes=[IsAuthenticated])
+    def end_events(self, request):
+        user = request.user
+        current_time = timezone.now()
+
+        events = Event.objects.filter(
+            ended_date__lt = current_time,
+            ticket_types__tickets__receipt__user = user
+        ).distinct().order_by('-ended_date')
+
+        serializer = self.get_serializer(events, many=True)
+        return Response(serializer.data)
+
+    @action(methods=['post'], detail=True, url_path='review', permission_classes=[IsAuthenticated])
+    def review_event(self, request, pk):
+        s = serializers.ReviewSerializer(data={
+            'user': request.user.pk,
+            'event': pk,
+            'count': request.data.get('count')
+        })
+        s.is_valid(raise_exception=True)
+        review = s.save()
+        return Response(serializers.ReviewSerializer(review).data, status=status.HTTP_201_CREATED)
+
+    @action(methods=['post'], detail=True, url_path='comment', permission_classes=[IsAuthenticated])
+    def comment_event(self, request, pk):
+        s = serializers.CommentSerializer(data={
+            'user': request.user.pk,
+            'event': pk,
+            'content': request.data.get('content')
+        })
+        s.is_valid(raise_exception=True)
+        comment = s.save()
+        return Response(serializers.CommentSerializer(comment).data, status=status.HTTP_201_CREATED)
 
 
 class PerformanceViewSet(viewsets.ViewSet, generics.ListAPIView):

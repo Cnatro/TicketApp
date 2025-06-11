@@ -99,17 +99,23 @@ class TicketCreateSerializer(serializers.Serializer):
 
 
 class EventListSerializer(serializers.ModelSerializer):
-    # category_name = serializers.CharField(source='category.name', read_only=True)
     venue_name = serializers.CharField(source='venue.name', read_only=True)
+    is_reviewed = serializers.SerializerMethodField()
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['image'] = instance.image.url if instance.image else ''
         return data
 
+    def get_is_reviewed(self, event):
+        user = self.context['request'].user
+        if user and user.is_authenticated:
+            return Review.objects.filter(event=event, user=user).exists()
+        return False
+
     class Meta:
         model = Event
-        fields = ['id', 'name', 'image', 'started_date', 'venue_name']
+        fields = ['id', 'name', 'image', 'started_date', 'venue_name', 'is_reviewed']
 
 
 class EventDetailSerializer(serializers.ModelSerializer):
@@ -271,6 +277,8 @@ class ReceiptHistorySerializer(serializers.ModelSerializer):
         if first_ticket:
             return first_ticket.ticket_type.event.venue.address
         return None
+
+
 class MessagesSerializer(serializers.ModelSerializer):
     sender = serializers.CharField(source="sender.username", read_only=True)
     room_id = serializers.IntegerField(source="room.id", read_only=True)
@@ -280,3 +288,35 @@ class MessagesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Messages
         fields = ["id", "message", "time", "room_id", "sender"]
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['user'] = UserSerializer(instance.user).data
+        return data
+
+    class Meta:
+        model = Comment
+        fields = ["id", "content", 'created_date', 'updated_date', "user", "event"]
+        extra_kwargs={
+            'event':{
+                'write_only' : True
+            }
+        }
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['user'] = UserSerializer(instance.user).data
+        return data
+
+    class Meta:
+        model = Review
+        fields = ["id", "count", 'created_date', 'updated_date', "user", "event"]
+        extra_kwargs={
+            'event':{
+                'write_only' : True
+            }
+        }

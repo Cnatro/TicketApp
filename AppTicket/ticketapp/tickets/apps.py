@@ -7,5 +7,4 @@ class TicketsConfig(AppConfig):
 
     def ready(self):
         import tickets.documents
-
-
+        import tickets.signals

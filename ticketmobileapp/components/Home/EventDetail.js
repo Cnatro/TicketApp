@@ -29,7 +29,7 @@ const EventDetail = ({ route }) => {
   const loadEventDetail = async () => {
     try {
       setLoading(true);
-      let res = await Apis.get(`${endpoints["events"]}/${eventId}`);
+      let res = await Apis.get(`${endpoints["events"]}/${eventId}/`);
       setEventDetail(res.data);
       //   console.log(res.data);
     } catch (error) {

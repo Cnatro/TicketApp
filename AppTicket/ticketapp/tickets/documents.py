@@ -14,7 +14,7 @@ my_analyzer = analyzer(
 event_index = Index('events')
 event_index.settings(
     number_of_shards=1,
-    number_of_replicas=0
+    number_of_replicas=0,
 )
 
 # Đăng ký Document
@@ -23,7 +23,6 @@ class EventDocument(Document):
     # Áp dụng analyzer cho trường name
     name = fields.TextField(analyzer=my_analyzer)
 
-    # Chỉ lấy venue.name để tìm kiếm
     venue = fields.ObjectField(properties={
         'name': fields.TextField(analyzer=my_analyzer),
         'address': fields.TextField()  # Không dùng để tìm, nhưng có thể để hiển thị
@@ -39,5 +38,7 @@ class EventDocument(Document):
             'attendee_count',      # Hiển thị
             'started_date',
             'ended_date',
+            'active',
             'status',
+            'view_count',
         ]

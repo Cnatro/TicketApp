@@ -28,7 +28,7 @@ const EventCategory = ({ route }) => {
     const loadEvent = async () => {
         try {
             setLoading(true);
-            let res = await Apis.get(`${endpoints["categories"]}/${categoryId}/events`);
+            let res = await Apis.get(`${endpoints["categories"]}/${categoryId}/events/`);
             setEvents(res.data);
         } catch (error) {
             console.error("Lỗi khi tải sự kiện:", error);
