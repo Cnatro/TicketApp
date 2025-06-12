@@ -197,6 +197,7 @@ class ReceiptViewSet(viewsets.ViewSet, generics.CreateAPIView):
         serializer = serializers.ReceiptHistorySerializer(history_receipt, many=True)
         return Response(serializer.data)
 
+
 class PayPalViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 

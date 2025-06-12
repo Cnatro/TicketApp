@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from cloudinary.models import CloudinaryField
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from datetime import timedelta
@@ -28,6 +28,7 @@ class BasicModel(models.Model):
 class Category(BasicModel):
     name = models.CharField(max_length=50)
     img_name = CloudinaryField("img_name", null=True, blank=True)
+
     def __str__(self):
         return self.name
 
@@ -70,28 +71,33 @@ class Event(BasicModel):
         if self.ended_date and self.ended_date <= self.started_date:
             raise ValidationError("Thời gian kết thúc phải lớn hơn thời gian hiện tại")
 
-        event_exist = Event.objects.filter(started_date__lt=self.ended_date,
-                                           ended_date__gt=self.started_date,
-                                           venue=self.venue)
-        # bỏ qua chính nó khi update
-        if self.pk:
-            event_exist = event_exist.exclude(pk=self.pk)
+        try:
+            event_exist = Event.objects.filter(started_date__lt=self.ended_date,
+                                               ended_date__gt=self.started_date,
+                                               venue=self.venue)
+            # bỏ qua chính nó khi update
+            if self.pk:
+                event_exist = event_exist.exclude(pk=self.pk)
 
-        if event_exist.exists():
-            event = event_exist.first()
-            raise ValidationError(
-                f"Đã có sự kiện '{event.name}' diễn ra tại '{event.venue.name}' "
-                f"từ {event.started_date.strftime('%d/%m/%Y %H:%M')} đến {event.ended_date.strftime('%d/%m/%Y %H:%M')}"
-            )
-        if self.attendee_count > self.venue.capacity:
-            raise ValidationError("Số người tham gia phải nhỏ hơn sức chứa của địa điểm")
+            if event_exist.exists():
+                event = event_exist.first()
+                raise ValidationError(
+                    f"Đã có sự kiện '{event.name}' diễn ra tại '{event.venue.name}' "
+                    f"từ {event.started_date.strftime('%d/%m/%Y %H:%M')} đến {event.ended_date.strftime('%d/%m/%Y %H:%M')}"
+                )
+            if self.attendee_count > self.venue.capacity:
+                raise ValidationError("Số người tham gia phải nhỏ hơn sức chứa của địa điểm")
+        except ObjectDoesNotExist:
+            return
 
-    def clean(self):
-        super().clean()
-        self.validate_event()
 
-    def __str__(self):
-        return f"Su kien : {self.name} - Thoi gian : {self.started_date} -- {self.ended_date}"
+def clean(self):
+    super().clean()
+    self.validate_event()
+
+
+def __str__(self):
+    return f"Su kien : {self.name} - Thoi gian : {self.started_date} -- {self.ended_date}"
 
 
 class Performance(BasicModel):
@@ -111,8 +117,8 @@ class Performance(BasicModel):
             raise ValidationError("Thời gian kết thúc phải trong khoảng thời bắt đầu và kết thúc sự kiện")
 
         performance_exists = Performance.objects.filter(started_date__lt=self.ended_date,
-                                           ended_date__gt=self.started_date,
-                                           event=self.event)
+                                                        ended_date__gt=self.started_date,
+                                                        event=self.event)
         # bỏ qua chính nó khi update
         if self.pk:
             performance_exists = performance_exists.exclude(pk=self.pk)
@@ -240,7 +246,7 @@ class Messages(BasicModel):
     content = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)
 
-    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name="messages",null=True)
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name="messages", null=True)
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
 
     def __str__(self):
