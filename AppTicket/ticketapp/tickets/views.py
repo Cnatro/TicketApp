@@ -31,10 +31,12 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
         u = request.user
         if request.method.__eq__('PATCH'):
             for k, v in request.data.items():
-                if k in ['first_name', 'last_name']:
+                if k in ['first_name', 'last_name', 'phone', 'address','email', 'gender']:
                     setattr(u, k, v)
                 elif k.__eq__('password'):
                     u.set_password(v)
+                elif k == 'avatar' and 'avatar' in request.FILES:
+                    u.avatar = request.FILES['avatar']
             u.save()
         return Response(serializers.UserSerializer(u).data)
 
@@ -43,18 +45,14 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.filter(active=True)
     serializer_class = serializers.CategorySerializer
 
-    # def list(self, request):
-    #     queryset = self.get_queryset()
-    #     serializer = self.get_serializer(queryset, many=True)
-    #     return Response(serializer.data)
-
     @action(methods=['get'], detail=True, url_path="events")
     def get_event_by_category(self, request, pk=None):
+        current_time = timezone.now()
         try:
             category = Category.objects.get(pk=pk, active=True)
         except Category.DoesNotExist:
             return Response({'error': 'Category not found'}, status=404)
-        events = category.events.filter(active=True)  # events là foreinket
+        events = category.events.filter(active=True, ended_date__gt=current_time)
         serializer = serializers.EventListSerializer(events, many=True, context={'request': request})
         return Response(serializer.data)
 

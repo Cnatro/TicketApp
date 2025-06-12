@@ -87,7 +87,7 @@ const Profile = () => {
 
             <Divider />
 
-            <MenuItem label="Thông tin cá nhân" />
+            <MenuItem label="Thông tin cá nhân" onNavigator={() => navigation.navigate("EditProfile")} />
             <MenuItem label="Đổi mật khẩu" />
             <MenuItem label="Vé đã mua" onNavigator={() => navigation.navigate("Receipted")} />
             <MenuItem label="Hỏi đáp" />
