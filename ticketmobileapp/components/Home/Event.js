@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from "react";
 import {
   View,
   FlatList,
@@ -9,7 +8,6 @@ import {
   Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import Apis, { endpoints } from "../../configs/Apis";
 import Spinner from "../Utils/spinner";
 
 const { width } = Dimensions.get("window");
@@ -17,65 +15,8 @@ const ITEM_SPACING = 10;
 const NUM_COLUMNS = 2;
 const itemWidth = (width - ITEM_SPACING * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
-const Event = ({ searchQuery }) => {
+const Event = ({ events, page, loading, loadMore }) => {
   const navigation = useNavigation();
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-
-  const loadEvents = async () => {
-    if (page === 0) return;
-
-    try {
-      setLoading(true);
-      let url = `${endpoints["events"]}?page=${page}`;
-      if (searchQuery) {
-        url += `&q=${encodeURIComponent(searchQuery.trim())}`;
-      }
-      const res = await Apis.get(url);
-      setEvents((prev) => {
-        const existingIds = new Set(prev.map((event) => event.id));
-        const newEvents = res.data.results.filter(
-          (event) => !existingIds.has(event.id)
-        );
-        return [...prev, ...newEvents];
-      });
-
-      if (!res.data.next || res.data.count <= events.length + res.data.results.length) {
-        setPage(0);
-      }
-    } catch (err) {
-      console.error("Lỗi tải sự kiện:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadEvents();
-  }, []);
-
-  useEffect(() => {
-    setEvents([]);
-    setPage(1);
-    loadEvents();
-  }, [searchQuery]);
-
-  // useEffect(() => {
-  //   loadEvents();
-  // }, [page]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadEvents();
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [page]);
-
-  const loadMore = () => {
-    if (!loading && page > 0) setPage((prev) => prev + 1);
-  };
 
   const renderItem = ({ item, index }) => (
     <TouchableOpacity
@@ -105,19 +46,20 @@ const Event = ({ searchQuery }) => {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={events}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={NUM_COLUMNS}
-        contentContainerStyle={styles.gridContainer}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        ListFooterComponent={loading && page > 1 ? <Spinner /> : null}
-        ListEmptyComponent={
-          !loading ? <Text style={styles.emptyText}>Không có sự kiện nào</Text> : null
-        }
-      />
+      {events && events.length > 0 ? (
+        <FlatList
+          data={events}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={NUM_COLUMNS}
+          contentContainerStyle={styles.gridContainer}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={loading && page > 1 ? <Spinner /> : null}
+        />
+      ) : (
+        <Text style={styles.emptyText}>Không có sự kiện nào</Text>
+      )}
     </View>
   );
 };
@@ -127,7 +69,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
     borderRadius: 10,
     marginBottom: 30,
-    flex: 1
+    flex: 1,
   },
   gridContainer: {
     justifyContent: "center",
@@ -152,7 +94,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     overflow: "hidden",
-
   },
   eventImage: {
     width: "100%",

@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
     View,
     Text,
@@ -20,7 +20,7 @@ const ReceiptHistory = () => {
             let res = await authApis(token).get(`${endpoints["receipt"]}/receipt-history/`);
             setReceipt(res.data);
         } catch (error) {
-            console.error("Lỗi load vé đã mua", error);
+            // console.error("Lỗi load vé đã mua", error);
         } finally {
             setLoading(false);
         }
@@ -50,8 +50,8 @@ const ReceiptHistory = () => {
                 <>
                     <View style={styles.headerRow}>
                         <Text style={styles.headerCellLeft}>Sự kiện</Text>
-                        <Text style={styles.headerCellMiddle}>Địa Chỉ</Text>
-                        <Text style={styles.headerCellRight}>Tổng Gía</Text>
+                        <Text style={styles.headerCellMiddle}>Địa chỉ</Text>
+                        <Text style={styles.headerCellRight}>Tổng giá</Text>
                     </View>
                     <FlatList
                         scrollEnabled={false}

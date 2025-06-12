@@ -32,7 +32,7 @@ const ChatBox = () => {
       let res = await authApis(token).get(endpoints["chat-room"]);
       setMessages(res.data);
     } catch (error) {
-      console.error("Lỗi load tin nhắn", error);
+      // console.error("Lỗi load tin nhắn", error);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 // import { BASE_URL } from '@env';
 import axios from "axios";
 
+
 const BASE_URL = "http://192.168.1.107:8000";
 
 export const webSocketUrl = `ws://192.168.1.107:8000/ws/chat`

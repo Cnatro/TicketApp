@@ -23,7 +23,7 @@ const Receipted = () => {
       let res = await authApis(token).get(`${endpoints["receipt"]}/latest/`);
       if (res.status === 200) setReceiptLatest(res.data);
     } catch (error) {
-      console.error("Lỗi load vé đã mua", error);
+      // console.error("Lỗi load vé đã mua", error);
     } finally {
       setLoading(false);
     }

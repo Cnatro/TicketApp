@@ -349,6 +349,19 @@ class GroupModelAdmin(BaseModelAdmin):
     list_display_links = ['name']
 
 
+class ReviewModelAdmin(BaseModelAdmin):
+    list_display = ['id','count','user','event','actions_link']
+    search_fields = ['count']
+    list_display_links = ['event']
+    list_per_page = 5
+
+class CommentModelAdmin(BaseModelAdmin):
+    list_display = ['id','content','user','event','actions_link']
+    search_fields = ['event']
+    list_display_links = ['content']
+    list_per_page = 5
+
+
 admin_site = TicketAppAdminSite(name="myAdminSite")
 admin_site.register(User, UserModelAdmin)
 admin_site.register(Category, CategoryModelAdmin)
@@ -360,7 +373,7 @@ admin_site.register(Performance, PerformanceModelAdmin)
 admin_site.register(Receipt, ReceiptModelAdmin)
 admin_site.register(Group, GroupModelAdmin)
 admin_site.register(Permission, PermissionModelAdmin)
-# admin_site.register(Comment)
-admin_site.register(Review)
-admin_site.register(Messages)
-admin_site.register(ChatRoom)
+admin_site.register(Comment,CommentModelAdmin)
+admin_site.register(Review,ReviewModelAdmin)
+# admin_site.register(Messages)
+# admin_site.register(ChatRoom)

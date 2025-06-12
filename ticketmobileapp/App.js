@@ -17,6 +17,7 @@ import Receipted from "./components/Home/Receipted";
 import PayPal from "./components/Payment/PayPal";
 import ChatBox from "./components/Home/ChatBox";
 // import { requestPermissionNotification, sheduleNoticationsForTickets } from "./components/Home/Notifications";
+import EditProfile from "./components/User/EditProfile";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -52,6 +53,7 @@ const HomeStack = () => {
         component={ChatBox}
         options={{ title: "Tin nhắn" }}
       />
+
     </Stack.Navigator>
   );
 };
@@ -71,6 +73,10 @@ const UserStack = () => {
         component={Receipted}
         options={{ title: "Vé đã mua" }}
       />
+      <Stack.Screen
+        name="EditProfile"
+        component={EditProfile}
+        options={{ title: "Thông tin cá nhân" }} />
       {user === null && (
         <>
           <Stack.Screen

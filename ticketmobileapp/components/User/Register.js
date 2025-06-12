@@ -113,7 +113,6 @@ const Register = () => {
             const localUri = userReal.avatar.uri;
             const filename = localUri.split("/").pop();
 
-            // Lấy phần đuôi để đoán MIME type
             const match = /\.(\w+)$/.exec(filename || "");
             const ext = match?.[1]?.toLowerCase();
             const type =

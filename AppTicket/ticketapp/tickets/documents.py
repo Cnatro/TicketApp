@@ -1,43 +1,62 @@
 from django_elasticsearch_dsl import Document, Index, fields
 from django_elasticsearch_dsl.registries import registry
-from elasticsearch_dsl import analyzer
 from .models import Event
 
-# Khai báo analyzer
-my_analyzer = analyzer(
-    'my_analyzer',
-    tokenizer="standard",
-    filter=["lowercase", "stop", "snowball"]
-)
-
-# Cấu hình Index
+# ✅ Khai báo Index với custom analyzer settings
 event_index = Index('events')
 event_index.settings(
     number_of_shards=1,
-    number_of_replicas=0
+    number_of_replicas=0,
+    analysis={
+        "filter": {
+            "edge_ngram_filter": {
+                "type": "edge_ngram",
+                "min_gram": 1,
+                "max_gram": 20
+            }
+        },
+        "analyzer": {
+            "autocomplete": {
+                "type": "custom",
+                "tokenizer": "standard",
+                "filter": ["lowercase", "edge_ngram_filter"]
+            },
+            "autocomplete_search": {
+                "type": "custom",
+                "tokenizer": "standard",
+                "filter": ["lowercase"]
+            }
+        }
+    }
 )
 
-# Đăng ký Document
 @registry.register_document
 class EventDocument(Document):
-    # Áp dụng analyzer cho trường name
-    name = fields.TextField(analyzer=my_analyzer)
+    name = fields.TextField(
+        analyzer="autocomplete",              # ✅ Dùng đúng tên analyzer
+        search_analyzer="autocomplete_search"
+    )
 
-    # Chỉ lấy venue.name để tìm kiếm
     venue = fields.ObjectField(properties={
-        'name': fields.TextField(analyzer=my_analyzer),
-        'address': fields.TextField()  # Không dùng để tìm, nhưng có thể để hiển thị
+        'name': fields.TextField(
+            analyzer="autocomplete",
+            search_analyzer="autocomplete_search"
+        ),
+        'address': fields.TextField()
     })
 
     class Index:
         name = 'events'
+        settings = event_index._settings
 
     class Django:
         model = Event
         fields = [
-            'description',         # Không cần tìm, chỉ hiển thị
-            'attendee_count',      # Hiển thị
+            'description',
+            'attendee_count',
             'started_date',
             'ended_date',
+            'active',
             'status',
+            'view_count',
         ]

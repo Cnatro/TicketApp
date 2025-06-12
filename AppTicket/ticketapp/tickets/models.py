@@ -58,15 +58,16 @@ class Event(BasicModel):
     ended_date = models.DateTimeField()
     description = models.CharField(max_length=255, null=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PUBLISHED)
+    view_count = models.IntegerField(default=0)
 
     category = models.ForeignKey(Category, on_delete=models.RESTRICT, related_name="events")
     user = models.ForeignKey(User, on_delete=models.RESTRICT, related_name="events")
     venue = models.ForeignKey(Venue, on_delete=models.RESTRICT, related_name="events")
 
     def validate_event(self):
-        if self.started_date < (timezone.now() + timedelta(days=2)):
+        if self.started_date and self.started_date < (timezone.now() + timedelta(days=2)):
             raise ValidationError("Thời gian bắt đầu phải lớn hơn hiện tại 2 ngày")
-        if self.ended_date <= self.started_date:
+        if self.ended_date and self.ended_date <= self.started_date:
             raise ValidationError("Thời gian kết thúc phải lớn hơn thời gian hiện tại")
 
         event_exist = Event.objects.filter(started_date__lt=self.ended_date,
@@ -171,10 +172,6 @@ class Receipt(BasicModel):
     def __str__(self):
         return f"Receipt #{self.pk} - {self.user.username}"
 
-    # def save(self, *args, **kwargs):
-    #     if not self.total_price:
-    #         self.total_price = self.ticket.quantity * self.ticket.ticket_type.price
-    #     super().save(*args, **kwargs)
 
 class Ticket(BasicModel):
     code_qr = models.CharField(max_length=255, unique=True)

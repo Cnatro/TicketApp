@@ -14,29 +14,75 @@ import Event from "./Event";
 import { TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import useAuth from "../../Hooks/useAuth";
+import EventTopTrend from "./EventTopTrend";
+import Apis, { endpoints } from "../../configs/Apis";
 
 const Home = () => {
   const [userData] = useAuth();
   const user = userData?._j || null;
   const scrollY = useRef(new Animated.Value(0)).current;
   const navigation = useNavigation();
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [q, setQ] = useState("");
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+
   const headerBackgroundColor = scrollY.interpolate({
     inputRange: [0, 100],
     outputRange: ["#ffffff", "#fbb676"],
     extrapolate: "clamp",
   });
 
-  useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      setSearchQuery(debouncedQuery); // Chỉ cập nhật sau 500ms nếu không gõ nữa
-    }, 500);
-    return () => clearTimeout(delayDebounce);
-  }, [debouncedQuery]);
+  const loadEvents = async () => {
+    if (page > 0) {
+      try {
+        setLoading(true);
+        // console.log(page);
+        let url = `${endpoints["events"]}/?page=${page}`;
+        if (q) {
+          url += `&q=${encodeURIComponent(q.trim())}`;
+        }
+        const res = await Apis.get(url);
+        setEvents([...events,...res.data.results])
+        // setEvents((prev) => {
+        //   const existingIds = new Set(prev.map((event) => event.id));
+        //   const newEvents = res.data.results.filter(
+        //     (event) => !existingIds.has(event.id)
+        //   );
+        //   return [...prev, ...newEvents];
+        // });
 
-  const onChangeSearch = (query) => {
-    setSearchQuery(query); // Cập nhật từ khóa tìm kiếm
+        if (res.data.next === null) {
+          setPage(0);
+        }
+      } catch (err) {
+        console.error("Lỗi tải sự kiện:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadEvents();
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadEvents();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [page, q]);
+
+  const loadMore = () => {
+    if (!loading && page > 0) setPage(page + 1);
+  };
+
+  const setSearch = (value, callback) => {
+    setPage(1);
+    setEvents([]);
+    callback(value);
   };
 
   return (
@@ -79,8 +125,8 @@ const Home = () => {
           placeholder="Tìm kiếm..."
           inputStyle={styles.searchInput}
           iconColor="#f15c22"
-          // value={()=> debouncedQuery}
-          // onChangeText={() => onChangeSearch()}
+          value={q}
+          onChangeText={(t) => setSearch(t, setQ)}
         />
       </Animated.View>
 
@@ -90,10 +136,23 @@ const Home = () => {
         renderItem={() => (
           <View style={styles.contentContainer}>
             <Category />
+            {q === "" ? (
+              <>
+                <View style={styles.eventTitleContainer}>
+                  <Text style={styles.eventTitle}>Sự kiện hot</Text>
+                </View>
+                <EventTopTrend />
+              </>
+            ) : null}
             <View style={styles.eventTitleContainer}>
-              <Text style={styles.eventTitle}>Sự kiện</Text>
+              <Text style={styles.eventTitle}>Gợi ý sự kiện</Text>
             </View>
-            <Event searchQuery={searchQuery} />
+            <Event
+              events={events}
+              page={page}
+              loading={loading}
+              loadMore={loadMore}
+            />
           </View>
         )}
         contentContainerStyle={styles.listContent}

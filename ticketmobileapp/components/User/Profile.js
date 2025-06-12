@@ -12,7 +12,8 @@ import { Divider, IconButton, ProgressBar } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import useAuth from "../../Hooks/useAuth";
 import { useNavigation } from "@react-navigation/native";
-import ReceiptHistory from "../Home/ReceiptHistory";
+import ReceiptHistory from "./ReceiptHistory";
+import Review from "./Review";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("info");
@@ -57,6 +58,11 @@ const Profile = () => {
               Giao dịch
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity onPress={() => setActiveTab("review")}>
+            <Text style={[styles.tabItem, activeTab === "review" && styles.activeTab]}>
+              Đánh giá
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Progress bar */}
@@ -81,10 +87,9 @@ const Profile = () => {
 
             <Divider />
 
-            <MenuItem label="Thông tin cá nhân" />
-            <MenuItem label="Đổi mật khẩu" />
+            <MenuItem label="Thông tin cá nhân" onNavigator={() => navigation.navigate("EditProfile")} />
             <MenuItem label="Vé đã mua" onNavigator={() => navigation.navigate("Receipted")} />
-            <MenuItem label="Hỏi đáp" />
+            <MenuItem label="Hỏi đáp" onNavigator={() => navigation.navigate("HomeStack", { screen: "ChatBox" })}/>
             <View style={styles.hotline}>
               <Text style={styles.hotlineLabel}>Hotline:</Text>
               <Text style={styles.hotlineNumber}>028 7300 8881</Text>
@@ -98,8 +103,10 @@ const Profile = () => {
               </TouchableOpacity>
             </View>
           </>
-        ) : (
+        ) : activeTab === "receipt" ? (
           <ReceiptHistory />
+        ) : (
+          <Review />
         )}
 
       </ScrollView>
