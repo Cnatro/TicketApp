@@ -1,7 +1,9 @@
 {
   "expo": {
     "name": "ticketmobileapp",
+    "owner": "cnatro",
     "slug": "ticketmobileapp",
+    "scheme": "ticketmobileapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,7 +22,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.anonymous.ticketmobileapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"

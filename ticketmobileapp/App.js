@@ -6,7 +6,7 @@ import EventDetail from "./components/Home/EventDetail";
 import { createStackNavigator } from "@react-navigation/stack";
 import UserHome from "./components/User/UserHome";
 import EventCategory from "./components/Home/EventCategory";
-import { useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import UserReducer from "./reducers/UserReducer";
 import { DispatcherUserContext, UserContext } from "./contexts/MyContext";
 import Login from "./components/User/Login";
@@ -16,6 +16,7 @@ import Ticket from "./components/Home/Ticket";
 import Receipted from "./components/Home/Receipted";
 import PayPal from "./components/Payment/PayPal";
 import ChatBox from "./components/Home/ChatBox";
+// import { requestPermissionNotification, sheduleNoticationsForTickets } from "./components/Home/Notifications";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -35,10 +36,7 @@ const HomeStack = () => {
         component={EventDetail}
         options={{ title: "Chi tiết sự kiện" }}
       />
-      <Stack.Screen
-        name="EventCategory"
-        component={EventCategory}
-      />
+      <Stack.Screen name="EventCategory" component={EventCategory} />
       <Stack.Screen
         name="Ticket"
         component={Ticket}
@@ -141,6 +139,13 @@ const TabNavigator = () => {
 const App = () => {
   const [user, dispatch] = useReducer(UserReducer, null);
 
+  // const loadNotification = async () =>{
+  //   await requestPermissionNotification();
+  //   await sheduleNoticationsForTickets();
+  // }
+  // useEffect(() => {
+  //   loadNotification();
+  // }, []);
   return (
     <UserContext.Provider value={user}>
       <DispatcherUserContext.Provider value={dispatch}>

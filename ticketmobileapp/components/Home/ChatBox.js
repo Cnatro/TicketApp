@@ -51,7 +51,7 @@ const ChatBox = () => {
   }, []);
 
   useEffect(() => {
-    console.log(`${webSocketUrl}/room_${user.id}/`);
+    // console.log(`${webSocketUrl}/room_${user.id}/`);
     socketRef.current = new WebSocket(`${webSocketUrl}/room_${user.id}/`);
 
     socketRef.current.onmessage = (event) => {
@@ -98,8 +98,8 @@ const ChatBox = () => {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "padding"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+      behavior={Platform.OS === "android" ? "padding" : "padding"}
+      keyboardVerticalOffset={Platform.OS === "android" ? 100 : 0}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.container}>

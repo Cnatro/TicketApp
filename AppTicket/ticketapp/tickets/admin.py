@@ -8,15 +8,13 @@ from django.urls import reverse, path
 from rest_framework.generics import get_object_or_404
 
 from .models import *
-import qrcode
-import base64
-from io import BytesIO
 from django.db.models import Avg
 from ticketapp.settings import ALLOWED_GROUPS
 from django.contrib.auth.hashers import make_password
 import requests,json
 
 from .statistical import get_revenue_ticket, get_interest_event
+from .utils import generate_qr_base64
 
 
 class TicketAppAdminSite(admin.AdminSite):
@@ -285,11 +283,7 @@ class TicketModelAdmin(BaseModelAdmin):
 
     def qr_code(self, obj):
         qr_data = obj.code_qr
-
-        qr_img = qrcode.make(qr_data)
-        buffer = BytesIO()
-        qr_img.save(buffer, format='PNG')
-        img_str = base64.b64encode(buffer.getvalue()).decode()
+        img_str = generate_qr_base64(qr_data)
 
         modal_id = f"qrModal{obj.id}"
 

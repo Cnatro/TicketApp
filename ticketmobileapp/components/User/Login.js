@@ -15,6 +15,7 @@ import useAuth from "../../Hooks/useAuth";
 import Apis, { authApis, endpoints } from "../../configs/Apis";
 import Spinner from "../Utils/spinner";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import LoginWithGoogle from "./LoginWithGoogle";
 
 const Login = () => {
   const [user, setUser] = useState({
@@ -110,10 +111,7 @@ const Login = () => {
             <Divider style={{ flex: 1 }} />
           </View>
 
-          <TouchableOpacity style={styles.googleButton}>
-            <GoogleLogo size={20} color="#EA4335" style={{ marginRight: 8 }} />
-            <Text style={styles.googleButtonText}>Tiếp tục với Google</Text>
-          </TouchableOpacity>
+          <LoginWithGoogle />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -166,20 +164,20 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     color: "#888",
   },
-  googleButton: {
-    flexDirection: "row",
-    borderColor: "#EA4335",
-    borderWidth: 1.2,
-    paddingVertical: 10,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  googleButtonText: {
-    color: "#EA4335",
-    fontWeight: "600",
-    fontSize: 15,
-  },
+  // googleButton: {
+  //   flexDirection: "row",
+  //   borderColor: "#EA4335",
+  //   borderWidth: 1.2,
+  //   paddingVertical: 10,
+  //   borderRadius: 8,
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  // },
+  // googleButtonText: {
+  //   color: "#EA4335",
+  //   fontWeight: "600",
+  //   fontSize: 15,
+  // },
 });
 
 export default Login;
