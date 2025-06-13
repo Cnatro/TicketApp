@@ -210,7 +210,7 @@ class PayPalViewSet(viewsets.ViewSet):
         cancel_url = request.data.get("cancel_url")
 
         payment = paypalrestsdk.Payment({
-            "intent": "sale",  # trả ngay khi bấm đồng ý
+            "intent": "sale",
             "payer": {"payment_method": "paypal"},
             "redirect_urls": {
                 "return_url": return_url,

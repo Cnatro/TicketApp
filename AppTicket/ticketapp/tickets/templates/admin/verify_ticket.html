@@ -20,7 +20,7 @@
         readerBox.classList.remove("flash");
       }, 1000);
 
-      const firstLine = decodedText.split('\n')[0]; // → "ID: RC:12||TT:3"
+      const firstLine = decodedText.split('\n')[0]; //  "ID: RC:12||TT:3"
 
       const match = firstLine.match(/RC:(\d+)\|\|TT:(\d+)/);
       if (match) {

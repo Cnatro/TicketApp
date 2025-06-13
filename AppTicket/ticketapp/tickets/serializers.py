@@ -158,19 +158,19 @@ class ReceiptCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Loại vé không tồn tại.")
 
             new_event = ticket_type.event
-            existing_tickets = Ticket.objects.filter(receipt__user=user,is_checked_in=False)
+            exist_tickets = Ticket.objects.filter(receipt__user=user,is_checked_in=False)
 
-            for existing_ticket in existing_tickets:
+            for existing_ticket in exist_tickets:
                 existing_event = existing_ticket.ticket_type.event
 
-                is_time_overlap = (
+                is_time = (
                         new_event.started_date <= existing_event.ended_date and
                         new_event.ended_date >= existing_event.started_date
                 )
 
                 is_same_venue = new_event.venue == existing_event.venue
 
-                if is_time_overlap and is_same_venue:
+                if is_time and is_same_venue:
                     raise serializers.ValidationError({
                         'tickets': f"Sự kiện '{new_event.name}' trùng thời gian và địa điểm với sự kiện '{existing_event.name}' bạn đã đặt trước đó."
                     })
