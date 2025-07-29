@@ -19,10 +19,10 @@ Enables users to book tickets, chat in real time, search for events, and allows 
 ## 🛠️ Tech Stack
 
 | Category        | Technologies                                                  |
-|----------------|---------------------------------------------------------------|
-| Backend         | Django, Django REST Framework, Django Channels, WebSocket     |
+|-----------------|---------------------------------------------------------------|
+| Backend         | Django REST Framework, WebSocket                              |
 | Frontend        | React Native                                                  |
-| Database        | PostgreSQL                                                    |
+| Database        | MySQL                                                    |
 | Search Engine   | Elasticsearch                                                 |
 | Map & Media     | OpenStreetMap, Cloudinary                                     |
 | Payment         | PayPal                                                        |
